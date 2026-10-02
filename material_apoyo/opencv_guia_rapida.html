@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía rápida de OpenCV con Python</title>
+<style>
+:root{--bg:#0b1220;--panel:#121d30;--panel2:#182740;--text:#e8eef8;--muted:#a9b8cf;--accent:#8bd450;--line:#2a3b55;--code:#080e18;--blue:#75b7ff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+header{padding:48px 22px 34px;background:linear-gradient(135deg,#142744,#172b45 60%,#1c3b2b);border-bottom:1px solid var(--line)}
+.hero,main{max-width:1150px;margin:auto}.eyebrow{color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:.8rem}
+h1{font-size:clamp(2rem,5vw,3.5rem);line-height:1.1;margin:.45rem 0 1rem}header p{max-width:780px;color:#d0dced;margin:0}
+main{padding:26px 20px 60px}.toolbar{display:flex;gap:12px;flex-wrap:wrap;margin:0 0 22px}.toolbar input{flex:1;min-width:220px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--text);font:inherit}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:26px}nav a{padding:7px 11px;border:1px solid var(--line);border-radius:999px;color:var(--blue);text-decoration:none;font-size:.9rem}nav a:hover{background:var(--panel2)}
+section{margin:30px 0;scroll-margin-top:16px}.section-title{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:10px;margin-bottom:16px}.section-title h2{font-size:1.55rem;margin:0}.count{color:var(--muted);font-size:.85rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,470px),1fr));gap:15px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;min-width:0}.card h3{margin:0 0 7px;font-size:1.12rem}.desc{color:var(--muted);margin:0 0 12px}.signature{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--accent);font-size:.91rem;overflow-wrap:anywhere;margin:10px 0}.label{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--blue);font-weight:700;margin:12px 0 4px}
+pre{margin:0;background:var(--code);border:1px solid #26364c;border-radius:9px;padding:13px;overflow-x:auto;color:#e6edf7;font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre}
+code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}.note{background:#172b25;border-left:4px solid var(--accent);padding:13px 15px;border-radius:7px;color:#d9f4d1;margin:18px 0}.warn{background:#302718;border-left:4px solid #e8b45c;padding:13px 15px;border-radius:7px;color:#f5e5c4;margin:18px 0}
+footer{border-top:1px solid var(--line);padding:22px;color:var(--muted);text-align:center;font-size:.9rem}a{color:var(--blue)}.hidden{display:none!important}
+@media(max-width:600px){header{padding:34px 18px 26px}main{padding:20px 13px 40px}.card{padding:14px}.section-title h2{font-size:1.3rem}}
+</style>
+</head>
+<body>
+<header><div class="hero">
+<div class="eyebrow">Referencia para clase · Python</div>
+<h1>Guía rápida de OpenCV</h1>
+<p>Funciones frecuentes para leer, mostrar, guardar y transformar imágenes con Python. Cada ficha incluye el propósito, parámetros habituales y un ejemplo comentado.</p>
+</div></header>
+<main>
+<div class="toolbar"><input id="busqueda" type="search" placeholder="Buscar una función, parámetro o concepto… (ej. resize, HSV, umbral)" aria-label="Buscar contenido"></div>
+<nav aria-label="Secciones">
+<a href="#inicio">Inicio</a><a href="#archivos">Archivos y ventanas</a><a href="#propiedades">Propiedades y píxeles</a><a href="#color">Color</a><a href="#transformaciones">Transformaciones</a><a href="#analisis">Análisis</a><a href="#bordes">Bordes y contornos</a><a href="#video">Video y cámara</a>
+</nav>
+<div class="note"><strong>Instalación:</strong> <code>python -m pip install opencv-python numpy</code><br>Importación habitual: <code>import cv2</code> y <code>import numpy as np</code>.</div>
+<div class="warn"><strong>Consejo:</strong> comprueba que la imagen no sea <code>None</code> después de <code>cv2.imread()</code>. En OpenCV, las imágenes a color normalmente se leen en orden BGR, no RGB. Las ventanas de <code>imshow()</code> necesitan un entorno gráfico compatible.</div>
+
+<section id="inicio">
+<div class="section-title"><h2>Antes de comenzar</h2></div>
+<div class="card searchable"><p><strong>Convención de dimensiones:</strong> <code>imagen.shape</code> devuelve normalmente <code>(alto, ancho, canales)</code>; en cambio, el tamaño de salida de <code>cv2.resize()</code> se escribe como <code>(ancho, alto)</code>.</p><p><strong>Coordenadas:</strong> el origen está en la esquina superior izquierda. Las columnas aumentan hacia la derecha y las filas hacia abajo. El recorte <code>imagen[y1:y2, x1:x2]</code> usa primero filas y luego columnas; el límite final no se incluye.</p></div>
+</section>
+
+<section id="archivos">
+<div class="section-title"><h2>1. Archivos y ventanas</h2></div>
+<div class="grid">
+<article class="card searchable"><h3>cv2.imread()</h3><p class="desc">Carga una imagen del disco y devuelve una matriz NumPy.</p><div class="signature">cv2.imread(filename, flags=cv2.IMREAD_COLOR)</div><div class="label">Parámetros</div><p><code>filename</code>: ruta del archivo. <code>flags</code>: modo de lectura.</p><pre>imagen = cv2.imread("foto.jpg")
+gris = cv2.imread("foto.jpg", cv2.IMREAD_GRAYSCALE)
+sin_cambios = cv2.imread("foto.png", cv2.IMREAD_UNCHANGED)
+
+if imagen is None:
+    print("No se pudo cargar la imagen")</pre><p class="desc">Flags frecuentes: <code>IMREAD_COLOR</code> (color BGR), <code>IMREAD_GRAYSCALE</code> (gris), <code>IMREAD_UNCHANGED</code> (conserva canal alfa si existe).</p></article>
+<article class="card searchable"><h3>cv2.imshow()</h3><p class="desc">Muestra una imagen en una ventana.</p><div class="signature">cv2.imshow(winname, mat)</div><div class="label">Parámetros</div><p><code>winname</code>: título de ventana. <code>mat</code>: imagen a mostrar.</p><pre>cv2.imshow("Imagen original", imagen)
+cv2.waitKey(0)       # Espera una tecla
+cv2.destroyAllWindows()</pre><p class="desc">No omitas <code>waitKey()</code> en scripts tradicionales: permite procesar eventos de ventana.</p></article>
+<article class="card searchable"><h3>cv2.imwrite()</h3><p class="desc">Guarda una matriz como archivo de imagen.</p><div class="signature">cv2.imwrite(filename, img[, params])</div><pre>correcto = cv2.imwrite("salida.png", imagen)
+if correcto:
+    print("Archivo guardado")
+else:
+    print("No se pudo guardar")</pre><p class="desc">La extensión suele determinar el formato. La carpeta de destino debe existir y ser escribible.</p></article>
+<article class="card searchable"><h3>cv2.waitKey() y cv2.destroyAllWindows()</h3><p class="desc">Gestionan la interacción y el cierre de ventanas.</p><pre>tecla = cv2.waitKey(0) & 0xFF
+if tecla == 27:       # ESC
+    cv2.destroyAllWindows()
+elif tecla == ord("s"):
+    cv2.imwrite("guardada.png", imagen)
+    cv2.destroyAllWindows()</pre><p class="desc"><code>waitKey(0)</code> espera indefinidamente; <code>waitKey(30)</code> espera aproximadamente 30 ms entre eventos.</p></article>
+</div></section>
+
+<section id="propiedades">
+<div class="section-title"><h2>2. Propiedades y píxeles</h2></div>
+<div class="grid">
+<article class="card searchable"><h3>shape, size, dtype</h3><p class="desc">Propiedades de la matriz de imagen, no funciones de OpenCV.</p><pre>alto, ancho = imagen.shape[:2]
+print("Dimensiones:", ancho, "x", alto)
+print("Forma de matriz:", imagen.shape)
+print("Cantidad de valores:", imagen.size)
+print("Tipo de dato:", imagen.dtype)</pre><p class="desc">Una imagen a color común tiene forma <code>(alto, ancho, 3)</code> y tipo <code>uint8</code>.</p></article>
+<article class="card searchable"><h3>Acceder y modificar píxeles</h3><p class="desc">Se utiliza el slicing de NumPy.</p><pre># Pixel en fila 50, columna 100 (B, G, R)
+pixel = imagen[50, 100]
+print(pixel)
+
+# Cambiar ese píxel a rojo en BGR
+imagen[50, 100] = [0, 0, 255]
+
+# Recortar: filas y luego columnas
+roi = imagen[50:200, 100:300]</pre><p class="desc">Verifica que las coordenadas estén dentro de los límites de la imagen.</p></article>
+<article class="card searchable"><h3>np.clip() para limitar intensidades</h3><p class="desc">Útil al sumar o restar valores para ajustar el brillo.</p><pre>import numpy as np
+
+mas_clara = np.clip(
+    imagen.astype(np.int16) + 35,
+    0, 255
+).astype(np.uint8)
+
+mas_oscura = np.clip(
+    imagen.astype(np.int16) - 35,
+    0, 255
+).astype(np.uint8)</pre><p class="desc">Convertir temporalmente a un tipo con signo evita el desbordamiento al restar en matrices <code>uint8</code>.</p></article>
+</div></section>
+
+<section id="color">
+<div class="section-title"><h2>3. Color y conversión de espacios</h2></div>
+<div class="grid">
+<article class="card searchable"><h3>cv2.cvtColor()</h3><p class="desc">Convierte una imagen de un espacio de color a otro.</p><div class="signature">cv2.cvtColor(src, code[, dst[, dstCn]])</div><pre>gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+rgb = cv2.cvtColor(imagen, cv2.COLOR_BGR2RGB)
+hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)</pre><p class="desc">El código de conversión debe corresponder al formato real de la imagen de entrada.</p></article>
+<article class="card searchable"><h3>RGB, BGR y HSV</h3><p class="desc">Modelos de representación del color.</p><ul><li><strong>BGR:</strong> orden usado normalmente por OpenCV al leer color.</li><li><strong>RGB:</strong> frecuente en otras bibliotecas de visualización.</li><li><strong>HSV:</strong> tono, saturación y valor; útil para segmentar colores.</li></ul><pre># Máscara de ejemplo para tonos rojos
+hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
+inferior = np.array([0, 100, 80])
+superior = np.array([10, 255, 255])
+mascara = cv2.inRange(hsv, inferior, superior)</pre><p class="desc">El rojo puede aparecer cerca de ambos extremos del tono HSV; para cubrirlo por completo suele combinarse más de una máscara.</p></article>
+<article class="card searchable"><h3>cv2.split() y cv2.merge()</h3><p class="desc">Separan o combinan los canales de una imagen.</p><pre>azul, verde, rojo = cv2.split(imagen)
+imagen_combinada = cv2.merge((azul, verde, rojo))</pre><p class="desc">Los nombres siguen el orden de los canales de la matriz BGR.</p></article>
+</div></section>
+
+<section id="transformaciones">
+<div class="section-title"><h2>4. Transformaciones de imagen</h2></div>
+<div class="grid">
+<article class="card searchable"><h3>cv2.resize()</h3><p class="desc">Cambia el tamaño de la imagen.</p><div class="signature">cv2.resize(src, dsize[, dst[, fx[, fy[, interpolation]]]])</div><pre># Tamaño exacto: (ancho, alto)
+pequena = cv2.resize(
+    imagen, (320, 240),
+    interpolation=cv2.INTER_AREA
+)
+
+# Escala relativa
+grande = cv2.resize(
+    imagen, None, fx=1.5, fy=1.5,
+    interpolation=cv2.INTER_CUBIC
+)</pre><p class="desc"><code>INTER_AREA</code> suele convenir al reducir; <code>INTER_LINEAR</code> es una opción general; <code>INTER_CUBIC</code> puede utilizarse al ampliar.</p></article>
+<article class="card searchable"><h3>Brillo y contraste</h3><p class="desc">Operaciones aritméticas sobre las intensidades.</p><pre># Brillo: suma una constante
+brillo = cv2.convertScaleAbs(imagen, alpha=1.0, beta=35)
+
+# Contraste y brillo:
+# alpha controla escala; beta, desplazamiento
+ajustada = cv2.convertScaleAbs(
+    imagen, alpha=1.3, beta=10
+)</pre><p class="desc"><code>alpha</code> mayor que 1 aumenta la escala de intensidad; <code>beta</code> desplaza los valores. Los resultados se saturan al rango de salida.</p></article>
+<article class="card searchable"><h3>cv2.normalize()</h3><p class="desc">Normaliza los valores de una matriz a un rango determinado.</p><pre>normalizada = cv2.normalize(
+    imagen, None, 0, 255,
+    cv2.NORM_MINMAX
+)</pre><p class="desc">La normalización min-max ajusta los valores mínimos y máximos. En imágenes a color, el resultado puede depender de cómo se aplica a la matriz completa.</p></article>
+<article class="card searchable"><h3>cv2.flip()</h3><p class="desc">Refleja una imagen.</p><pre>horizontal = cv2.flip(imagen, 1)
+vertical = cv2.flip(imagen, 0)
+ambos = cv2.flip(imagen, -1)</pre><p class="desc">Código 1: eje vertical (reflejo horizontal). Código 0: eje horizontal. Código -1: ambos ejes.</p></article>
+<article class="card searchable"><h3>cv2.rotate()</h3><p class="desc">Gira una imagen en ángulos predefinidos.</p><pre>giro_90_horario = cv2.rotate(
+    imagen, cv2.ROTATE_90_CLOCKWISE
+)
+giro_180 = cv2.rotate(
+    imagen, cv2.ROTATE_180
+)
+giro_90_antihorario = cv2.rotate(
+    imagen, cv2.ROTATE_90_COUNTERCLOCKWISE
+)</pre></article>
+<article class="card searchable"><h3>cv2.getRotationMatrix2D() y cv2.warpAffine()</h3><p class="desc">Permiten rotar alrededor de un punto.</p><pre>alto, ancho = imagen.shape[:2]
+centro = (ancho // 2, alto // 2)
+
+matriz = cv2.getRotationMatrix2D(
+    centro, 30, 1.0
+)
+rotada = cv2.warpAffine(
+    imagen, matriz, (ancho, alto)
+)</pre><p class="desc">Parámetros principales: centro, ángulo en grados, escala y tamaño de salida en orden (ancho, alto).</p></article>
+</div></section>
+
+<section id="analisis">
+<div class="section-title"><h2>5. Análisis básico de imágenes</h2></div>
+<div class="grid">
+<article class="card searchable"><h3>cv2.calcHist()</h3><p class="desc">Calcula el histograma de uno o varios canales.</p><div class="signature">cv2.calcHist(images, channels, mask, histSize, ranges)</div><pre>gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+histograma = cv2.calcHist(
+    [gris], [0], None, [256], [0, 256]
+)</pre><p class="desc"><code>channels=[0]</code> selecciona el primer canal de la imagen en gris; <code>histSize=[256]</code> usa 256 intervalos; <code>ranges=[0, 256]</code> define el rango.</p></article>
+<article class="card searchable"><h3>cv2.threshold()</h3><p class="desc">Convierte una imagen en función de un umbral de intensidad.</p><div class="signature">cv2.threshold(src, thresh, maxval, type)</div><pre>gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+_, binaria = cv2.threshold(
+    gris, 127, 255, cv2.THRESH_BINARY
+)</pre><p class="desc">Los píxeles por encima del umbral se convierten en el valor máximo; los demás, en cero. Requiere normalmente una imagen de un canal.</p></article>
+<article class="card searchable"><h3>cv2.adaptiveThreshold()</h3><p class="desc">Calcula umbrales locales, útil con iluminación desigual.</p><pre>binaria = cv2.adaptiveThreshold(
+    gris, 255,
+    cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+    cv2.THRESH_BINARY,
+    11, 2
+)</pre><p class="desc">Parámetros clave: valor máximo, método adaptativo, tipo de umbral, tamaño impar del vecindario y constante que se resta.</p></article>
+<article class="card searchable"><h3>cv2.inRange()</h3><p class="desc">Genera una máscara para valores dentro de un rango.</p><pre>hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
+inferior = np.array([35, 60, 40])
+superior = np.array([85, 255, 255])
+mascara = cv2.inRange(hsv, inferior, superior)
+resultado = cv2.bitwise_and(
+    imagen, imagen, mask=mascara
+)</pre><p class="desc">Los límites deben adaptarse al color, la iluminación y la cámara.</p></article>
+<article class="card searchable"><h3>Operaciones bitwise</h3><p class="desc">Combinan imágenes o regiones mediante operaciones binarias.</p><pre>union = cv2.bitwise_or(imagen_a, imagen_b)
+interseccion = cv2.bitwise_and(imagen_a, imagen_b)
+inversion = cv2.bitwise_not(imagen)
+diferencia = cv2.bitwise_xor(imagen_a, imagen_b)</pre><p class="desc">Para combinar imágenes, normalmente deben tener dimensiones y tipos compatibles.</p></article>
+</div></section>
+
+<section id="bordes">
+<div class="section-title"><h2>6. Bordes, contornos y suavizado</h2></div>
+<div class="grid">
+<article class="card searchable"><h3>cv2.GaussianBlur()</h3><p class="desc">Suaviza la imagen y puede reducir ruido antes de detectar bordes.</p><pre>suave = cv2.GaussianBlur(
+    imagen, (5, 5), 0
+)</pre><p class="desc">El tamaño del kernel suele ser impar, por ejemplo (3,3) o (5,5). Sigma 0 permite que OpenCV lo calcule a partir del kernel.</p></article>
+<article class="card searchable"><h3>cv2.Canny()</h3><p class="desc">Detecta bordes a partir de cambios de intensidad.</p><div class="signature">cv2.Canny(image, threshold1, threshold2)</div><pre>gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+bordes = cv2.Canny(gris, 100, 200)
+cv2.imshow("Bordes", bordes)</pre><p class="desc">Los dos umbrales controlan la detección por histéresis. Los valores óptimos dependen de la imagen.</p></article>
+<article class="card searchable"><h3>cv2.findContours()</h3><p class="desc">Busca contornos en una imagen binaria.</p><pre>gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+_, binaria = cv2.threshold(
+    gris, 127, 255, cv2.THRESH_BINARY
+)
+contornos, jerarquia = cv2.findContours(
+    binaria, cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+salida = imagen.copy()
+cv2.drawContours(salida, contornos, -1, (0,255,0), 2)</pre><p class="desc"><code>RETR_EXTERNAL</code> recupera contornos externos. <code>CHAIN_APPROX_SIMPLE</code> comprime puntos redundantes. El comportamiento de retorno puede variar en ejemplos antiguos de OpenCV.</p></article>
+<article class="card searchable"><h3>cv2.rectangle() y cv2.putText()</h3><p class="desc">Dibujan anotaciones sobre una imagen.</p><pre>anotada = imagen.copy()
+cv2.rectangle(
+    anotada, (30, 40), (220, 180),
+    (0, 255, 0), 2
+)
+cv2.putText(
+    anotada, "Objeto",
+    (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
+    0.8, (0, 255, 0), 2
+)</pre><p class="desc">Los colores de dibujo se especifican en BGR. Un grosor negativo en algunas funciones de dibujo rellena la figura.</p></article>
+<article class="card searchable"><h3>cv2.circle() y cv2.line()</h3><p class="desc">Dibujan círculos y líneas.</p><pre>cv2.circle(imagen, (100, 100), 30, (255, 0, 0), 2)
+cv2.line(imagen, (10, 10), (200, 120), (0, 255, 255), 3)</pre><p class="desc">Los puntos usan coordenadas (x, y). Si no quieres modificar la original, dibuja sobre <code>imagen.copy()</code>.</p></article>
+</div></section>
+
+<section id="video">
+<div class="section-title"><h2>7. Video y cámara</h2></div>
+<div class="grid">
+<article class="card searchable"><h3>cv2.VideoCapture()</h3><p class="desc">Abre una cámara o un archivo de video.</p><pre>captura = cv2.VideoCapture(0)  # Cámara predeterminada
+# También: cv2.VideoCapture("video.mp4")
+
+if not captura.isOpened():
+    print("No se pudo abrir la cámara")
+else:
+    correcto, fotograma = captura.read()
+    if correcto:
+        cv2.imshow("Cámara", fotograma)
+
+captura.release()
+cv2.destroyAllWindows()</pre><p class="desc">El índice 0 suele representar la cámara predeterminada; puede variar según el equipo.</p></article>
+<article class="card searchable"><h3>Bucle básico de video</h3><p class="desc">Lee y muestra fotogramas hasta pulsar ESC.</p><pre>captura = cv2.VideoCapture(0)
+
+while captura.isOpened():
+    correcto, fotograma = captura.read()
+    if not correcto:
+        break
+
+    cv2.imshow("Video en vivo", fotograma)
+    if (cv2.waitKey(1) & 0xFF) == 27:
+        break
+
+captura.release()
+cv2.destroyAllWindows()</pre><p class="desc">Libera siempre el recurso de la cámara al terminar.</p></article>
+</div></section>
+
+<section id="plantilla">
+<div class="section-title"><h2>8. Plantilla mínima reutilizable</h2></div>
+<div class="card searchable"><p class="desc">Una estructura segura para comenzar ejercicios de procesamiento de imágenes.</p><pre>import cv2
+import numpy as np
+
+RUTA = "imagen.jpg"
+
+imagen = cv2.imread(RUTA)
+
+if imagen is None:
+    print(f"No se pudo abrir: {RUTA}")
+else:
+    alto, ancho = imagen.shape[:2]
+    print(f"Dimensiones: {ancho} x {alto}")
+
+    gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+    reducida = cv2.resize(
+        imagen, (320, 240),
+        interpolation=cv2.INTER_AREA
+    )
+
+    cv2.imshow("Original", imagen)
+    cv2.imshow("Escala de grises", gris)
+    cv2.imshow("Redimensionada", reducida)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()</pre></div>
+</section>
+
+<section>
+<div class="section-title"><h2>Documentación y aprendizaje adicional</h2></div>
+<div class="card"><ul>
+<li><a href="https://docs.opencv.org/" target="_blank" rel="noopener">Documentación oficial de OpenCV</a></li>
+<li><a href="https://docs.opencv.org/4.x/d6/d00/tutorial_py_root.html" target="_blank" rel="noopener">Tutoriales oficiales de OpenCV para Python</a></li>
+<li><a href="https://docs.opencv.org/4.x/d3/df2/tutorial_py_basic_ops.html" target="_blank" rel="noopener">Operaciones básicas con imágenes</a></li>
+<li><a href="https://docs.opencv.org/4.x/da/d6e/tutorial_py_geometric_transformations.html" target="_blank" rel="noopener">Transformaciones geométricas</a></li>
+<li><a href="https://docs.opencv.org/4.x/d7/d4d/tutorial_py_thresholding.html" target="_blank" rel="noopener">Umbralización de imágenes</a></li>
+</ul><p class="desc">La documentación puede cambiar entre versiones. Comprueba la versión instalada con <code>print(cv2.__version__)</code> y contrasta los parámetros en la referencia oficial.</p></div>
+</section>
+</main>
+<footer>Guía educativa de consulta rápida · OpenCV con Python · Ejemplos para adaptar y practicar</footer>
+<script>
+const campo = document.getElementById('busqueda');
+const tarjetas = [...document.querySelectorAll('.searchable')];
+campo.addEventListener('input', () => {
+  const consulta = campo.value.toLowerCase().trim();
+  tarjetas.forEach(tarjeta => {
+    tarjeta.classList.toggle('hidden', !tarjeta.textContent.toLowerCase().includes(consulta));
+  });
+  document.querySelectorAll('section').forEach(seccion => {
+    const visibles = [...seccion.querySelectorAll('.searchable')].some(t => !t.classList.contains('hidden'));
+    seccion.classList.toggle('hidden', consulta.length > 0 && !visibles);
+  });
+});
+</script>
+</body>
+</html>

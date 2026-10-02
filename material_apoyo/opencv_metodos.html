@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Métodos y funciones principales de OpenCV</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f5f5f5;
+        }
+
+        h1 {
+            text-align: center;
+            color: #222;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+        }
+
+        th,
+        td {
+            border: 1px solid #ccc;
+            padding: 10px;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background-color: #222;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+
+        code {
+            background-color: #eee;
+            padding: 3px 5px;
+            border-radius: 4px;
+            font-family: Consolas, monospace;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Métodos principales de OpenCV</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Método</th>
+                <th>Argumentos principales</th>
+                <th>Uso</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <!-- IMÁGENES -->
+
+            <tr>
+                <td><code>cv2.imread()</code></td>
+                <td>
+                    <code>filename</code><br>
+                    <code>flags</code>
+                </td>
+                <td>Carga una imagen desde un archivo.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.imwrite()</code></td>
+                <td>
+                    <code>filename</code><br>
+                    <code>img</code><br>
+                    <code>params</code>
+                </td>
+                <td>Guarda una imagen en un archivo.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.imshow()</code></td>
+                <td>
+                    <code>winname</code><br>
+                    <code>mat</code>
+                </td>
+                <td>Muestra una imagen en una ventana.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.waitKey()</code></td>
+                <td>
+                    <code>delay</code>
+                </td>
+                <td>Espera una tecla durante un tiempo determinado.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.destroyAllWindows()</code></td>
+                <td>
+                    Sin argumentos
+                </td>
+                <td>Cierra todas las ventanas creadas por OpenCV.</td>
+            </tr>
+
+            <!-- TRANSFORMACIONES -->
+
+            <tr>
+                <td><code>cv2.resize()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>dsize</code><br>
+                    <code>fx</code><br>
+                    <code>fy</code><br>
+                    <code>interpolation</code>
+                </td>
+                <td>Cambia el tamaño de una imagen.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.rotate()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>rotateCode</code>
+                </td>
+                <td>Rota una imagen 90°, 180° o 270°.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.flip()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>flipCode</code>
+                </td>
+                <td>Invierte una imagen horizontal o verticalmente.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.warpAffine()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>M</code><br>
+                    <code>dsize</code>
+                </td>
+                <td>Aplica una transformación afín a una imagen.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.getRotationMatrix2D()</code></td>
+                <td>
+                    <code>center</code><br>
+                    <code>angle</code><br>
+                    <code>scale</code>
+                </td>
+                <td>Genera la matriz necesaria para rotar una imagen.</td>
+            </tr>
+
+            <!-- COLOR -->
+
+            <tr>
+                <td><code>cv2.cvtColor()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>code</code>
+                </td>
+                <td>Convierte una imagen entre espacios de color.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.inRange()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>lowerb</code><br>
+                    <code>upperb</code>
+                </td>
+                <td>Selecciona píxeles que se encuentran dentro de un rango.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.split()</code></td>
+                <td>
+                    <code>m</code>
+                </td>
+                <td>Separa una imagen en sus diferentes canales.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.merge()</code></td>
+                <td>
+                    <code>mv</code>
+                </td>
+                <td>Combina diferentes canales para formar una imagen.</td>
+            </tr>
+
+            <!-- FILTROS -->
+
+            <tr>
+                <td><code>cv2.blur()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>ksize</code>
+                </td>
+                <td>Aplica un desenfoque promedio.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.GaussianBlur()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>ksize</code><br>
+                    <code>sigmaX</code><br>
+                    <code>sigmaY</code>
+                </td>
+                <td>Aplica un desenfoque gaussiano para reducir ruido.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.medianBlur()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>ksize</code>
+                </td>
+                <td>Reduce ruido conservando mejor los bordes.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.bilateralFilter()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>d</code><br>
+                    <code>sigmaColor</code><br>
+                    <code>sigmaSpace</code>
+                </td>
+                <td>Reduce ruido intentando conservar los bordes.</td>
+            </tr>
+
+            <!-- BORDES -->
+
+            <tr>
+                <td><code>cv2.Canny()</code></td>
+                <td>
+                    <code>image</code><br>
+                    <code>threshold1</code><br>
+                    <code>threshold2</code>
+                </td>
+                <td>Detecta bordes en una imagen.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.Sobel()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>ddepth</code><br>
+                    <code>dx</code><br>
+                    <code>dy</code><br>
+                    <code>ksize</code>
+                </td>
+                <td>Detecta cambios de intensidad en los ejes X e Y.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.Laplacian()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>ddepth</code><br>
+                    <code>ksize</code>
+                </td>
+                <td>Detecta bordes utilizando el operador Laplaciano.</td>
+            </tr>
+
+            <!-- UMBRALIZACIÓN -->
+
+            <tr>
+                <td><code>cv2.threshold()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>thresh</code><br>
+                    <code>maxval</code><br>
+                    <code>type</code>
+                </td>
+                <td>Convierte una imagen según un valor de umbral.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.adaptiveThreshold()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>maxValue</code><br>
+                    <code>adaptiveMethod</code><br>
+                    <code>thresholdType</code><br>
+                    <code>blockSize</code><br>
+                    <code>C</code>
+                </td>
+                <td>Calcula el umbral de forma local para diferentes zonas.</td>
+            </tr>
+
+            <!-- CONTORNOS -->
+
+            <tr>
+                <td><code>cv2.findContours()</code></td>
+                <td>
+                    <code>image</code><br>
+                    <code>mode</code><br>
+                    <code>method</code>
+                </td>
+                <td>Encuentra los contornos de objetos en una imagen.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.drawContours()</code></td>
+                <td>
+                    <code>image</code><br>
+                    <code>contours</code><br>
+                    <code>contourIdx</code><br>
+                    <code>color</code><br>
+                    <code>thickness</code>
+                </td>
+                <td>Dibuja contornos sobre una imagen.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.contourArea()</code></td>
+                <td>
+                    <code>contour</code><br>
+                    <code>oriented</code>
+                </td>
+                <td>Calcula el área de un contorno.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.arcLength()</code></td>
+                <td>
+                    <code>curve</code><br>
+                    <code>closed</code>
+                </td>
+                <td>Calcula el perímetro de un contorno.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.approxPolyDP()</code></td>
+                <td>
+                    <code>curve</code><br>
+                    <code>epsilon</code><br>
+                    <code>closed</code>
+                </td>
+                <td>Aproxima un contorno mediante una cantidad menor de puntos.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.boundingRect()</code></td>
+                <td>
+                    <code>array</code>
+                </td>
+                <td>Obtiene el rectángulo que contiene un objeto.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.minEnclosingCircle()</code></td>
+                <td>
+                    <code>points</code>
+                </td>
+                <td>Encuentra el círculo mínimo que contiene un conjunto de puntos.</td>
+            </tr>
+
+            <!-- DIBUJO -->
+
+            <tr>
+                <td><code>cv2.line()</code></td>
+                <td>
+                    <code>img</code><br>
+                    <code>pt1</code><br>
+                    <code>pt2</code><br>
+                    <code>color</code><br>
+                    <code>thickness</code>
+                </td>
+                <td>Dibuja una línea sobre una imagen.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.rectangle()</code></td>
+                <td>
+                    <code>img</code><br>
+                    <code>pt1</code><br>
+                    <code>pt2</code><br>
+                    <code>color</code><br>
+                    <code>thickness</code>
+                </td>
+                <td>Dibuja un rectángulo.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.circle()</code></td>
+                <td>
+                    <code>img</code><br>
+                    <code>center</code><br>
+                    <code>radius</code><br>
+                    <code>color</code><br>
+                    <code>thickness</code>
+                </td>
+                <td>Dibuja un círculo.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.putText()</code></td>
+                <td>
+                    <code>img</code><br>
+                    <code>text</code><br>
+                    <code>org</code><br>
+                    <code>fontFace</code><br>
+                    <code>fontScale</code><br>
+                    <code>color</code><br>
+                    <code>thickness</code>
+                </td>
+                <td>Escribe texto sobre una imagen.</td>
+            </tr>
+
+            <!-- MORFOLOGÍA -->
+
+            <tr>
+                <td><code>cv2.erode()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>kernel</code><br>
+                    <code>iterations</code>
+                </td>
+                <td>Reduce las regiones blancas de una imagen binaria.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.dilate()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>kernel</code><br>
+                    <code>iterations</code>
+                </td>
+                <td>Expande las regiones blancas de una imagen binaria.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.morphologyEx()</code></td>
+                <td>
+                    <code>src</code><br>
+                    <code>op</code><br>
+                    <code>kernel</code>
+                </td>
+                <td>Aplica operaciones morfológicas como apertura y cierre.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.getStructuringElement()</code></td>
+                <td>
+                    <code>shape</code><br>
+                    <code>ksize</code>
+                </td>
+                <td>Crea un elemento estructurante para operaciones morfológicas.</td>
+            </tr>
+
+            <!-- CAPTURA DE VIDEO -->
+
+            <tr>
+                <td><code>cv2.VideoCapture()</code></td>
+                <td>
+                    <code>filename</code><br>
+                    <code>apiPreference</code>
+                </td>
+                <td>Abre una cámara o un archivo de vídeo.</td>
+            </tr>
+
+            <tr>
+                <td><code>cap.read()</code></td>
+                <td>
+                    Sin argumentos
+                </td>
+                <td>Lee el siguiente fotograma de una cámara o vídeo.</td>
+            </tr>
+
+            <tr>
+                <td><code>cap.isOpened()</code></td>
+                <td>
+                    Sin argumentos
+                </td>
+                <td>Comprueba si la cámara o vídeo se abrió correctamente.</td>
+            </tr>
+
+            <tr>
+                <td><code>cap.release()</code></td>
+                <td>
+                    Sin argumentos
+                </td>
+                <td>Libera la cámara o archivo de vídeo.</td>
+            </tr>
+
+            <tr>
+                <td><code>cv2.VideoWriter()</code></td>
+                <td>
+                    <code>filename</code><br>
+                    <code>fourcc</code><br>
+                    <code>fps</code><br>
+                    <code>frameSize</code>
+                </td>
+                <td>Crea un objeto para guardar vídeo.</td>
+            </tr>
+
+            <tr>
+                <td><code>writer.write()</code></td>
+                <td>
+                    <code>image</code>
+                </td>
+                <td>Escribe un fotograma en un archivo de vídeo.</td>
+            </tr>
+
+            <tr>
+                <td><code>writer.release()</code></td>
+                <td>
+                    Sin argumentos
+                </td>
+                <td>Finaliza y cierra el archivo de vídeo.</td>
+            </tr>
+
+        </tbody>
+    </table>
+
+</body>
+</html>
