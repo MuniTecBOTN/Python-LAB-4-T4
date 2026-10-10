@@ -1,15 +1,5 @@
 import cv2
 
-try:
-    coordenada_x_inicial = int(input("Ingrese la coordenada x inicial: "))
-    coordenada_y_inicial = int(input("Ingrese la coordenada y inicial: "))
-
-    coordenada_x_final = int(input("Ingrese la coordenada x final: "))
-    coordenada_y_final = int(input("Ingrese la coordenada y final: "))
-except ValueError:
-    print("Error: Debe ingresar valores enteros válidos para las coordenadas.")
-    exit()
-    
     
 imagen = cv2.imread("mrrobot.jpg")
 
