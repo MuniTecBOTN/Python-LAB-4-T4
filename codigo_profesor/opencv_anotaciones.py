@@ -29,7 +29,7 @@ alto_reducida, ancho_reducida, _ = imagen_reducida.shape
 
 matriz_rotacion = cv2.getRotationMatrix2D(
     (ancho_reducida // 2, alto_reducida // 2),
-    45,
+    156.4,
     1,
 )
 
@@ -40,6 +40,7 @@ imagen_rotada = cv2.warpAffine(
 )
 
 imagen_anotada = imagen_reducida.copy()
+
 
 cv2.rectangle(
     imagen_anotada,
