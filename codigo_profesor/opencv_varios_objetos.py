@@ -1,13 +1,25 @@
 import cv2
 import numpy as np
 
-imagen = cv2.imread("objetos_colores.jpg")
+imagen = cv2.imread("figuras.jpg")
 
 if imagen is None:
     raise FileNotFoundError(
-        "No se encontró objetos_colores.jpg"
+        "No se encontró figuras.jpg"
     )
+# Obtener dimensiones originales
+alto, ancho, _ = imagen.shape
 
+# Calcular la nueva altura manteniendo la proporción
+relacion_aspecto = alto / ancho
+ancho_nuevo = 800
+alto_nuevo = int(relacion_aspecto * ancho_nuevo)
+
+
+imagen = cv2.resize(
+    imagen,
+    (ancho_nuevo, alto_nuevo)
+)   
 hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
 
 # Definir rangos aproximados para cada color
