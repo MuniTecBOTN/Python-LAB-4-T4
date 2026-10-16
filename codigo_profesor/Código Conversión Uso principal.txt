@@ -1,0 +1,9 @@
+Código	Conversión	Uso principal
+cv2.COLOR_BGR2GRAY	BGR → escala de grises	Análisis de bordes, texturas y formas.
+cv2.COLOR_BGR2RGB	BGR → RGB	Mostrar imágenes correctamente con bibliotecas que esperan RGB.
+cv2.COLOR_BGR2HSV	BGR → HSV	Detectar y segmentar objetos por color.
+cv2.COLOR_BGR2LAB	BGR → CIELAB	Comparar colores y analizar diferencias de luminosidad.
+cv2.COLOR_BGR2HLS	BGR → HLS	Analizar tono, luminosidad y saturación.
+cv2.COLOR_BGR2YCrCb	BGR → YCrCb	Separar luminosidad e información cromática.
+cv2.COLOR_GRAY2BGR	Grises → BGR	Convertir una imagen gris a tres canales.
+cv2.COLOR_HSV2BGR	HSV → BGR	Recuperar una representación BGR desde HSV.

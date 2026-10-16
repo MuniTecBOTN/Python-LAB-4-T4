@@ -1,0 +1,1255 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clase 2 | Visión por Computadora con OpenCV</title>
+
+<style>
+:root {
+    --primary: #1e40af;
+    --dark: #172033;
+    --background: #f3f6fb;
+    --border: #dbe3ef;
+    --muted: #5b6578;
+    --code: #111827;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--background);
+    color: var(--dark);
+    line-height: 1.7;
+}
+
+header {
+    background: linear-gradient(135deg, #142952, #2457c5);
+    color: white;
+    padding: 55px 22px;
+}
+
+header div,
+main,
+footer {
+    max-width: 1050px;
+    margin: auto;
+}
+
+header h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    line-height: 1.2;
+    margin-bottom: 15px;
+}
+
+header p {
+    max-width: 800px;
+    color: #e3ebff;
+    font-size: 1.1rem;
+}
+
+main {
+    padding: 25px 18px 50px;
+}
+
+section {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    padding: clamp(20px, 4vw, 32px);
+    margin-bottom: 24px;
+}
+
+h2 {
+    color: var(--primary);
+    line-height: 1.3;
+}
+
+h3 {
+    margin-top: 27px;
+}
+
+p {
+    margin: 12px 0;
+}
+
+a {
+    color: var(--primary);
+}
+
+nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
+}
+
+nav a {
+    text-decoration: none;
+    padding: 12px;
+    background: #edf2ff;
+    border-radius: 8px;
+    font-weight: bold;
+}
+
+nav a:hover {
+    background: #dce6ff;
+}
+
+.badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 15px 0;
+}
+
+.badges span {
+    background: #edf1f7;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
+
+.objective {
+    border-left: 4px solid var(--primary);
+    background: #eff4ff;
+    padding: 14px 17px;
+    margin: 20px 0;
+}
+
+.note {
+    background: #fff5df;
+    border: 1px solid #f0d59e;
+    padding: 14px;
+    border-radius: 9px;
+    margin: 18px 0;
+}
+
+.success {
+    background: #eaf8f0;
+    border: 1px solid #b8e5cd;
+    padding: 14px;
+    border-radius: 9px;
+    margin: 18px 0;
+}
+
+pre {
+    background: var(--code);
+    color: #e5edf8;
+    padding: 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    tab-size: 4;
+}
+
+code {
+    font-family: Consolas, "Courier New", monospace;
+}
+
+p code, li code, td code {
+    background: #edf1f7;
+    color: #20365f;
+    padding: 2px 5px;
+    border-radius: 4px;
+    overflow-wrap: anywhere;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.card {
+    border: 1px solid var(--border);
+    padding: 15px;
+    border-radius: 10px;
+    background: #fcfdff;
+}
+
+.card strong {
+    display: block;
+    margin-bottom: 7px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+}
+
+th, td {
+    border: 1px solid var(--border);
+    text-align: left;
+    padding: 10px 12px;
+    vertical-align: top;
+}
+
+th {
+    background: #edf2fa;
+}
+
+li {
+    margin-bottom: 7px;
+}
+
+input[type="checkbox"] {
+    margin-right: 9px;
+}
+
+.back {
+    display: inline-block;
+    margin-top: 15px;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+footer {
+    padding: 0 22px 30px;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+    header {
+        padding: 38px 18px;
+    }
+
+    main {
+        padding: 15px 10px 35px;
+    }
+
+    pre {
+        padding: 13px;
+        font-size: 0.8rem;
+    }
+
+    table {
+        font-size: 0.85rem;
+    }
+}
+
+@media print {
+    body {
+        background: white;
+    }
+
+    header {
+        background: white;
+        color: black;
+        padding: 20px 0;
+    }
+
+    header p {
+        color: #333;
+    }
+
+    nav {
+        display: none;
+    }
+
+    section {
+        break-inside: avoid;
+        box-shadow: none;
+    }
+
+    pre {
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header id="inicio">
+    <div>
+        <p>GUÍA DIDÁCTICA · CLASE 2</p>
+        <h1>Manipulación y procesamiento de imágenes con OpenCV</h1>
+        <p>
+            Aprende a recortar, redimensionar, rotar, anotar y procesar
+            imágenes mediante Python. Esta guía incluye cinco ejemplos
+            prácticos con explicaciones, actividades y un proyecto integrador.
+        </p>
+        <p>Duración sugerida: 2 horas y 30 minutos.</p>
+    </div>
+</header>
+
+<main>
+
+<section>
+    <h2>1. Introducción a la clase</h2>
+
+    <p>
+        Una imagen digital puede representarse como una matriz de píxeles.
+        Cada píxel contiene información que permite representar colores o
+        niveles de intensidad. OpenCV proporciona herramientas para acceder
+        a esta información y transformarla mediante operaciones matemáticas.
+    </p>
+
+    <div class="objective">
+        <strong>Objetivo general</strong>
+        Aplicar operaciones básicas de manipulación y procesamiento de imágenes
+        con Python y OpenCV, comprendiendo los parámetros de las funciones y
+        los resultados obtenidos.
+    </div>
+
+    <h3>Requisitos previos</h3>
+
+    <ul>
+        <li>Conocimientos básicos de Python.</li>
+        <li>Variables, condicionales e instrucciones de entrada y salida.</li>
+        <li>Uso básico de matrices o arreglos.</li>
+        <li>Un editor de código y Python instalado.</li>
+    </ul>
+
+    <h3>Instalación de las bibliotecas</h3>
+
+    <p>Ejecuta este comando en la terminal:</p>
+
+    <pre><code>python -m pip install opencv-python numpy</code></pre>
+
+    <p>
+        Guarda las imágenes que utilizarás en la misma carpeta que los
+        archivos Python. Puedes emplear fotografías propias.
+    </p>
+
+    <div class="note">
+        <strong>Importante:</strong> si OpenCV no encuentra una imagen,
+        <code>cv2.imread()</code> devuelve <code>None</code>. Siempre conviene
+        verificar que la carga se haya realizado correctamente.
+    </div>
+
+    <h3>Contenido</h3>
+
+    <nav>
+        <a href="#ejemplo1">Ejemplo 1. Recorte de imágenes</a>
+        <a href="#ejemplo2">Ejemplo 2. Redimensionamiento y rotación</a>
+        <a href="#ejemplo3">Ejemplo 3. Figuras y anotaciones</a>
+        <a href="#ejemplo4">Ejemplo 4. Filtros y bordes</a>
+        <a href="#ejemplo5">Ejemplo 5. Analizador de imágenes</a>
+        <a href="#repaso">Repaso y evaluación</a>
+    </nav>
+</section>
+
+<!-- EJEMPLO 1 -->
+
+<section id="ejemplo1">
+    <h2>2. Ejemplo 1: Recortar una región de interés (ROI)</h2>
+
+    <div class="badges">
+        <span>20 minutos</span>
+        <span>NumPy</span>
+        <span>Matrices</span>
+        <span>Coordenadas</span>
+    </div>
+
+    <div class="objective">
+        <strong>Objetivo:</strong> seleccionar una parte específica de una
+        imagen para analizarla de forma independiente.
+    </div>
+
+    <h3>¿Qué es una región de interés?</h3>
+
+    <p>
+        Una región de interés, conocida como ROI por sus siglas en inglés,
+        es una sección de una imagen que se selecciona para observarla o
+        procesarla por separado.
+    </p>
+
+    <p>
+        Por ejemplo, si tenemos una fotografía que contiene varias frutas,
+        podríamos seleccionar únicamente la zona donde aparece una manzana.
+        Para hacerlo, no es necesario crear una imagen nueva desde cero:
+        podemos seleccionar un rango de filas y columnas de la matriz original.
+    </p>
+
+    <h3>Código completo</h3>
+
+    <pre><code>import cv2
+
+imagen = cv2.imread("fruta.jpg")
+
+if imagen is None:
+    raise FileNotFoundError("No se encontró fruta.jpg")
+
+print("Dimensiones:", imagen.shape)
+
+# Seleccionar una región de la imagen
+recorte = imagen[100:300, 150:350]
+
+cv2.imshow("Imagen original", imagen)
+cv2.imshow("Region recortada", recorte)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+
+    <h3>Explicación paso a paso</h3>
+
+    <div class="cards">
+        <div class="card">
+            <strong>1. Cargar la imagen</strong>
+            <code>cv2.imread()</code> lee el archivo y lo convierte en una
+            matriz que puede manipularse desde Python.
+        </div>
+
+        <div class="card">
+            <strong>2. Validar la carga</strong>
+            La condición <code>imagen is None</code> detecta si el archivo
+            no pudo abrirse.
+        </div>
+
+        <div class="card">
+            <strong>3. Consultar dimensiones</strong>
+            <code>imagen.shape</code> permite conocer el alto, el ancho y,
+            en imágenes a color, el número de canales.
+        </div>
+
+        <div class="card">
+            <strong>4. Seleccionar la región</strong>
+            Los rangos de filas y columnas definen qué parte de la imagen
+            se conservará en el recorte.
+        </div>
+    </div>
+
+    <h3>¿Cómo funciona el recorte?</h3>
+
+    <pre><code>recorte = imagen[100:300, 150:350]</code></pre>
+
+    <p>La estructura es la siguiente:</p>
+
+    <pre><code>imagen[filas_inicio:filas_final, columnas_inicio:columnas_final]</code></pre>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Expresión</th>
+                <th>Interpretación</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>100:300</code></td>
+                <td>Selecciona filas desde la 100 hasta la 299.</td>
+            </tr>
+            <tr>
+                <td><code>150:350</code></td>
+                <td>Selecciona columnas desde la 150 hasta la 349.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>
+        Python no incluye el límite final del rango. Por eso, el primer rango
+        contiene 200 filas y el segundo contiene 200 columnas, siempre que
+        la imagen tenga dimensiones suficientes.
+    </p>
+
+    <h3>Visualizar las imágenes</h3>
+
+    <p>
+        <code>cv2.imshow()</code> abre una ventana para mostrar la matriz como
+        imagen. Podemos crear una ventana para la imagen original y otra para
+        el recorte.
+    </p>
+
+    <ul>
+        <li><code>cv2.waitKey(0)</code> espera hasta que se pulse una tecla.</li>
+        <li><code>cv2.destroyAllWindows()</code> cierra las ventanas abiertas.</li>
+    </ul>
+
+    <div class="note">
+        <strong>Problema frecuente:</strong> si las coordenadas superan las
+        dimensiones de la imagen, el recorte puede ser menor de lo esperado.
+        Consulta <code>imagen.shape</code> antes de seleccionar la región.
+    </div>
+
+    <h3>Actividad práctica</h3>
+
+    <ol>
+        <li>Prueba diferentes valores para las filas y columnas.</li>
+        <li>Genera dos recortes diferentes de la misma fotografía.</li>
+        <li>Imprime las dimensiones de cada recorte.</li>
+        <li>Explica cómo cambian los resultados al modificar las coordenadas.</li>
+    </ol>
+
+    <p><strong>Pregunta:</strong> ¿por qué NumPy utiliza primero las filas y después las columnas?</p>
+
+    <a class="back" href="#inicio">Volver al índice ↑</a>
+</section>
+
+<!-- EJEMPLO 2 -->
+
+<section id="ejemplo2">
+    <h2>3. Ejemplo 2: Redimensionar y rotar imágenes</h2>
+
+    <div class="badges">
+        <span>20 minutos</span>
+        <span>Dimensiones</span>
+        <span>Escalado</span>
+        <span>Rotación</span>
+    </div>
+
+    <div class="objective">
+        <strong>Objetivo:</strong> modificar las dimensiones y la orientación
+        de una imagen sin perder el control de su proporción.
+    </div>
+
+    <h3>¿Por qué redimensionar imágenes?</h3>
+
+    <p>
+        Las fotografías pueden contener millones de píxeles. Reducir sus
+        dimensiones facilita su visualización y puede disminuir el tiempo
+        requerido por operaciones posteriores.
+    </p>
+
+    <p>
+        Sin embargo, si cambiamos el ancho y el alto de manera independiente,
+        podemos deformar los objetos. Para evitarlo, debemos conservar la
+        relación de aspecto de la imagen.
+    </p>
+
+    <h3>Código completo</h3>
+
+    <pre><code>import cv2
+
+imagen = cv2.imread("paisaje.jpg")
+
+if imagen is None:
+    raise FileNotFoundError("No se encontró paisaje.jpg")
+
+alto, ancho = imagen.shape[:2]
+
+# Reducir las dimensiones al 50 %
+reducida = cv2.resize(
+    imagen,
+    (ancho // 2, alto // 2)
+)
+
+# Rotar 90 grados en sentido horario
+rotada = cv2.rotate(
+    imagen,
+    cv2.ROTATE_90_CLOCKWISE
+)
+
+cv2.imshow("Original", imagen)
+cv2.imshow("Reducida", reducida)
+cv2.imshow("Rotada", rotada)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+
+    <h3>Comprender las dimensiones</h3>
+
+    <p>
+        En una imagen de OpenCV, <code>imagen.shape</code> suele devolver
+        una estructura como esta:
+    </p>
+
+    <pre><code>(600, 800, 3)</code></pre>
+
+    <ul>
+        <li>600: alto en píxeles.</li>
+        <li>800: ancho en píxeles.</li>
+        <li>3: canales de color.</li>
+    </ul>
+
+    <p>
+        Por eso se utiliza <code>imagen.shape[:2]</code> para obtener
+        únicamente el alto y el ancho.
+    </p>
+
+    <h3>¿Cómo funciona resize()?</h3>
+
+    <pre><code>cv2.resize(imagen, (nuevo_ancho, nuevo_alto))</code></pre>
+
+    <p>
+        Aunque <code>shape</code> presenta primero el alto y después el ancho,
+        la función <code>resize()</code> recibe las dimensiones en el orden
+        ancho y alto.
+    </p>
+
+    <p>
+        El operador <code>//</code> realiza una división entera. Al dividir
+        ambas dimensiones entre dos, obtenemos una imagen con aproximadamente
+        una cuarta parte del número original de píxeles.
+    </p>
+
+    <h3>Conservar la proporción con un ancho específico</h3>
+
+    <p>
+        Supongamos que queremos una imagen de 800 píxeles de ancho.
+        Podemos calcular el alto proporcional utilizando la siguiente fórmula:
+    </p>
+
+    <pre><code>nuevo_ancho = 800
+nuevo_alto = int(alto * nuevo_ancho / ancho)
+
+redimensionada = cv2.resize(
+    imagen,
+    (nuevo_ancho, nuevo_alto)
+)</code></pre>
+
+    <p>
+        El cálculo conserva la proporción entre ancho y alto. La función
+        <code>int()</code> convierte el resultado a un número entero de píxeles.
+    </p>
+
+    <h3>Rotar una imagen</h3>
+
+    <p>OpenCV incluye tres rotaciones predefinidas:</p>
+
+    <table>
+        <thead>
+            <tr><th>Constante</th><th>Resultado</th></tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>cv2.ROTATE_90_CLOCKWISE</code></td>
+                <td>90 grados en sentido horario.</td>
+            </tr>
+            <tr>
+                <td><code>cv2.ROTATE_180</code></td>
+                <td>180 grados.</td>
+            </tr>
+            <tr>
+                <td><code>cv2.ROTATE_90_COUNTERCLOCKWISE</code></td>
+                <td>90 grados en sentido antihorario.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="note">
+        <strong>Diferencia importante:</strong> recortar significa seleccionar
+        una parte de la imagen. Redimensionar significa cambiar las dimensiones
+        de la imagen completa.
+    </div>
+
+    <h3>Actividad práctica</h3>
+
+    <ol>
+        <li>Redimensiona una imagen al 25 %, 50 % y 100 %.</li>
+        <li>Genera una versión de 800 píxeles de ancho conservando la proporción.</li>
+        <li>Prueba las tres rotaciones.</li>
+        <li>Imprime las dimensiones de cada resultado.</li>
+    </ol>
+
+    <p><strong>Pregunta:</strong> ¿qué problema aparece si modificamos el ancho y el alto sin conservar su proporción?</p>
+
+    <a class="back" href="#inicio">Volver al índice ↑</a>
+</section>
+
+<!-- EJEMPLO 3 -->
+
+<section id="ejemplo3">
+    <h2>4. Ejemplo 3: Dibujar figuras y agregar texto</h2>
+
+    <div class="badges">
+        <span>25 minutos</span>
+        <span>Anotaciones</span>
+        <span>Colores BGR</span>
+        <span>Coordenadas</span>
+    </div>
+
+    <div class="objective">
+        <strong>Objetivo:</strong> añadir elementos gráficos sobre una imagen
+        para marcar regiones, objetos o información relevante.
+    </div>
+
+    <h3>Aplicaciones de las anotaciones</h3>
+
+    <p>
+        Las anotaciones se utilizan para señalar zonas de interés y presentar
+        resultados visuales. Por ejemplo, un programa de detección de objetos
+        puede dibujar rectángulos alrededor de vehículos y colocar una etiqueta
+        con la clase detectada.
+    </p>
+
+    <h3>Código completo</h3>
+
+    <pre><code>import cv2
+
+imagen = cv2.imread("objetos.jpg")
+
+if imagen is None:
+    raise FileNotFoundError("No se encontró objetos.jpg")
+
+# Crear una copia para conservar la imagen original
+anotada = imagen.copy()
+
+# Dibujar un rectángulo verde
+cv2.rectangle(
+    anotada, (50, 50), (250, 200),
+    (0, 255, 0), 3
+)
+
+# Dibujar un círculo azul
+cv2.circle(
+    anotada, (350, 150), 50,
+    (255, 0, 0), 3
+)
+
+# Agregar texto rojo
+cv2.putText(
+    anotada,
+    "Objeto marcado",
+    (50, 35),
+    cv2.FONT_HERSHEY_SIMPLEX,
+    0.8,
+    (0, 0, 255),
+    2
+)
+
+cv2.imshow("Original", imagen)
+cv2.imshow("Imagen anotada", anotada)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+
+    <h3>Función rectangle()</h3>
+
+    <pre><code>cv2.rectangle(imagen, punto_inicial, punto_final, color, grosor)</code></pre>
+
+    <p>
+        El primer punto representa una esquina del rectángulo y el segundo
+        la esquina opuesta. El color se indica mediante tres valores y el
+        grosor determina cuántos píxeles tendrá el contorno.
+    </p>
+
+    <h3>Función circle()</h3>
+
+    <pre><code>cv2.circle(imagen, centro, radio, color, grosor)</code></pre>
+
+    <p>
+        El centro se define mediante coordenadas horizontales y verticales.
+        El radio determina el tamaño del círculo. Un radio mayor produce
+        una circunferencia más grande.
+    </p>
+
+    <h3>Función putText()</h3>
+
+    <pre><code>cv2.putText(
+    imagen,
+    "Texto",
+    (50, 35),
+    cv2.FONT_HERSHEY_SIMPLEX,
+    0.8,
+    (0, 0, 255),
+    2
+)</code></pre>
+
+    <p>Sus argumentos principales son:</p>
+
+    <ul>
+        <li>La imagen sobre la que se dibujará.</li>
+        <li>El texto que se mostrará.</li>
+        <li>La posición inicial del texto.</li>
+        <li>La fuente tipográfica.</li>
+        <li>El tamaño del texto.</li>
+        <li>El color en formato BGR.</li>
+        <li>El grosor de los caracteres.</li>
+    </ul>
+
+    <h3>El sistema de color BGR</h3>
+
+    <p>
+        OpenCV utiliza normalmente el orden BGR para representar los canales
+        de color. Esto significa que el primer valor corresponde al azul,
+        el segundo al verde y el tercero al rojo.
+    </p>
+
+    <table>
+        <thead>
+            <tr><th>Color</th><th>Valor BGR</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>Azul</td><td><code>(255, 0, 0)</code></td></tr>
+            <tr><td>Verde</td><td><code>(0, 255, 0)</code></td></tr>
+            <tr><td>Rojo</td><td><code>(0, 0, 255)</code></td></tr>
+            <tr><td>Blanco</td><td><code>(255, 255, 255)</code></td></tr>
+            <tr><td>Negro</td><td><code>(0, 0, 0)</code></td></tr>
+        </tbody>
+    </table>
+
+    <div class="note">
+        <strong>Buenas prácticas:</strong> las funciones de dibujo modifican
+        la matriz que reciben. Si deseas conservar la imagen original, utiliza
+        <code>imagen.copy()</code> y realiza las anotaciones sobre la copia.
+    </div>
+
+    <h3>Actividad práctica</h3>
+
+    <ol>
+        <li>Dibuja tres rectángulos con colores diferentes.</li>
+        <li>Agrega dos círculos en posiciones distintas.</li>
+        <li>Escribe etiquetas que identifiquen los objetos.</li>
+        <li>Guarda el resultado utilizando <code>cv2.imwrite()</code>.</li>
+    </ol>
+
+    <pre><code>cv2.imwrite("imagen_anotada.jpg", anotada)</code></pre>
+
+    <p><strong>Pregunta:</strong> ¿por qué es conveniente utilizar una copia de la imagen para realizar anotaciones?</p>
+
+    <a class="back" href="#inicio">Volver al índice ↑</a>
+</section>
+
+<!-- EJEMPLO 4 -->
+
+<section id="ejemplo4">
+    <h2>5. Ejemplo 4: Aplicar filtros y detectar bordes</h2>
+
+    <div class="badges">
+        <span>35 minutos</span>
+        <span>Escala de grises</span>
+        <span>Desenfoque</span>
+        <span>Canny</span>
+    </div>
+
+    <div class="objective">
+        <strong>Objetivo:</strong> comprender cómo las transformaciones de
+        imágenes permiten resaltar características y reducir información
+        que no es necesaria para determinadas tareas.
+    </div>
+
+    <h3>¿Qué es el procesamiento de imágenes?</h3>
+
+    <p>
+        El procesamiento de imágenes consiste en aplicar operaciones a sus
+        píxeles para modificar o resaltar información. En este ejemplo se
+        construye una secuencia de tres etapas: conversión a escala de grises,
+        suavizado y detección de bordes.
+    </p>
+
+    <h3>Código completo</h3>
+
+    <pre><code>import cv2
+
+imagen = cv2.imread("edificio.jpg")
+
+if imagen is None:
+    raise FileNotFoundError("No se encontró edificio.jpg")
+
+# Etapa 1: convertir a escala de grises
+gris = cv2.cvtColor(
+    imagen,
+    cv2.COLOR_BGR2GRAY
+)
+
+# Etapa 2: reducir pequeñas variaciones y ruido
+desenfocada = cv2.GaussianBlur(
+    gris,
+    (5, 5),
+    0
+)
+
+# Etapa 3: detectar bordes
+bordes = cv2.Canny(
+    desenfocada,
+    50,
+    150
+)
+
+cv2.imshow("Imagen original", imagen)
+cv2.imshow("Escala de grises", gris)
+cv2.imshow("Imagen desenfocada", desenfocada)
+cv2.imshow("Bordes detectados", bordes)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+
+    <h3>Etapa 1. Conversión a escala de grises</h3>
+
+    <pre><code>gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)</code></pre>
+
+    <p>
+        Una imagen a color suele contener tres canales. Al convertirla a
+        escala de grises, se obtiene una representación de un solo canal
+        que expresa la intensidad de cada píxel.
+    </p>
+
+    <p>
+        Esta transformación es útil cuando el color no es esencial para
+        la operación que se desea realizar, como sucede en muchos métodos
+        de detección de bordes.
+    </p>
+
+    <h3>Etapa 2. Desenfoque gaussiano</h3>
+
+    <pre><code>desenfocada = cv2.GaussianBlur(gris, (5, 5), 0)</code></pre>
+
+    <p>
+        El desenfoque gaussiano suaviza pequeñas variaciones de intensidad
+        entre píxeles vecinos. Para hacerlo, combina los valores de una
+        región alrededor de cada píxel mediante una ponderación gaussiana.
+    </p>
+
+    <ul>
+        <li><code>(5, 5)</code> define un núcleo de cinco por cinco píxeles.</li>
+        <li>El valor <code>0</code> permite que OpenCV calcule automáticamente
+            la desviación estándar correspondiente.</li>
+    </ul>
+
+    <p>
+        El suavizado puede reducir el efecto del ruido que, de otra manera,
+        podría producir bordes no deseados.
+    </p>
+
+    <h3>Etapa 3. Detección de bordes con Canny</h3>
+
+    <pre><code>bordes = cv2.Canny(desenfocada, 50, 150)</code></pre>
+
+    <p>
+        Canny es un algoritmo de detección de bordes. Busca cambios
+        significativos en la intensidad de los píxeles y produce una imagen
+        donde los bordes detectados suelen aparecer en blanco sobre un fondo
+        negro.
+    </p>
+
+    <p>Los dos últimos argumentos son umbrales:</p>
+
+    <ul>
+        <li>El umbral inferior ayuda a decidir qué gradientes débiles pueden
+            conservarse cuando están conectados con bordes fuertes.</li>
+        <li>El umbral superior determina cuáles gradientes se consideran
+            suficientemente fuertes para iniciar un borde.</li>
+    </ul>
+
+    <div class="note">
+        <strong>Importante:</strong> detectar bordes no significa reconocer
+        objetos. Canny puede resaltar los límites de una figura, pero no
+        determina por sí solo si esa figura es una persona, un automóvil
+        o un edificio.
+    </div>
+
+    <h3>Comparar distintos umbrales</h3>
+
+    <pre><code>bordes_1 = cv2.Canny(desenfocada, 30, 100)
+bordes_2 = cv2.Canny(desenfocada, 50, 150)
+bordes_3 = cv2.Canny(desenfocada, 100, 200)
+
+cv2.imshow("Canny 30-100", bordes_1)
+cv2.imshow("Canny 50-150", bordes_2)
+cv2.imshow("Canny 100-200", bordes_3)</code></pre>
+
+    <p>
+        Al modificar los umbrales se modifica la cantidad y la continuidad
+        de los bordes detectados. Los umbrales bajos pueden conservar más
+        detalles, incluidos algunos debidos al ruido. Los umbrales altos
+        pueden eliminar detalles débiles.
+    </p>
+
+    <h3>Actividad práctica</h3>
+
+    <ol>
+        <li>Compara la imagen original con la versión en escala de grises.</li>
+        <li>Observa las diferencias entre la imagen original y la desenfocada.</li>
+        <li>Prueba tres parejas de umbrales para Canny.</li>
+        <li>Guarda la imagen final con <code>cv2.imwrite("bordes.png", bordes)</code>.</li>
+        <li>Explica qué detalles se conservan y cuáles desaparecen.</li>
+    </ol>
+
+    <p><strong>Pregunta:</strong> ¿por qué puede ser útil aplicar un desenfoque antes de detectar bordes?</p>
+
+    <a class="back" href="#inicio">Volver al índice ↑</a>
+</section>
+
+<!-- EJEMPLO 5 -->
+
+<section id="ejemplo5">
+    <h2>6. Ejemplo 5: Mini proyecto, analizador de imágenes</h2>
+
+    <div class="badges">
+        <span>40 minutos</span>
+        <span>Integración</span>
+        <span>Validación</span>
+        <span>Proyecto práctico</span>
+    </div>
+
+    <div class="objective">
+        <strong>Objetivo:</strong> integrar las operaciones anteriores en
+        un programa que cargue una imagen, informe sus propiedades y muestre
+        diferentes versiones procesadas.
+    </div>
+
+    <h3>Descripción del proyecto</h3>
+
+    <p>
+        El programa solicita al usuario la ruta de una imagen. Si puede
+        cargarla, presenta sus dimensiones y el número de canales. Luego
+        genera una versión en escala de grises, aplica un desenfoque y
+        detecta los bordes. Finalmente, muestra todos los resultados.
+    </p>
+
+    <h3>Código completo</h3>
+
+    <pre><code>import cv2
+
+# Solicitar la ruta del archivo
+ruta = input("Ingrese la ruta de la imagen: ")
+
+# Cargar la imagen
+imagen = cv2.imread(ruta)
+
+if imagen is None:
+    print("Error: no se pudo cargar la imagen.")
+
+else:
+    # Consultar dimensiones
+    alto, ancho = imagen.shape[:2]
+
+    # Consultar el número de canales
+    if len(imagen.shape) == 3:
+        canales = imagen.shape[2]
+    else:
+        canales = 1
+
+    print("Ancho:", ancho, "pixeles")
+    print("Alto:", alto, "pixeles")
+    print("Canales:", canales)
+
+    # Convertir a escala de grises
+    gris = cv2.cvtColor(
+        imagen,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    # Aplicar desenfoque
+    desenfocada = cv2.GaussianBlur(
+        gris,
+        (5, 5),
+        0
+    )
+
+    # Detectar bordes
+    bordes = cv2.Canny(
+        desenfocada,
+        50,
+        150
+    )
+
+    # Mostrar los resultados
+    cv2.imshow("Original", imagen)
+    cv2.imshow("Escala de grises", gris)
+    cv2.imshow("Desenfoque", desenfocada)
+    cv2.imshow("Bordes", bordes)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()</code></pre>
+
+    <h3>Explicación del programa</h3>
+
+    <div class="cards">
+        <div class="card">
+            <strong>Entrada de datos</strong>
+            <code>input()</code> permite indicar la ruta de una imagen
+            sin tener que modificar el código.
+        </div>
+
+        <div class="card">
+            <strong>Validación</strong>
+            La condición <code>imagen is None</code> evita que el programa
+            intente procesar un archivo que no se pudo abrir.
+        </div>
+
+        <div class="card">
+            <strong>Inspección</strong>
+            <code>shape</code> proporciona el alto, el ancho y los canales
+            de la matriz.
+        </div>
+
+        <div class="card">
+            <strong>Procesamiento</strong>
+            Se ejecutan varias operaciones en secuencia para obtener
+            representaciones distintas de la misma imagen.
+        </div>
+    </div>
+
+    <h3>Retos adicionales</h3>
+
+    <ol>
+        <li>
+            <strong>Redimensionamiento:</strong> genera una imagen reducida
+            al 50 % y muéstrala en una ventana adicional.
+        </li>
+        <li>
+            <strong>Guardado:</strong> guarda el resultado de Canny con
+            <code>cv2.imwrite()</code>.
+        </li>
+        <li>
+            <strong>Recorte:</strong> selecciona una región de interés
+            y muestra sus dimensiones.
+        </li>
+        <li>
+            <strong>Anotaciones:</strong> dibuja un rectángulo y coloca
+            una etiqueta sobre la imagen.
+        </li>
+        <li>
+            <strong>Parámetros:</strong> solicita al usuario los dos
+            umbrales de Canny mediante <code>input()</code>.
+        </li>
+    </ol>
+
+    <div class="success">
+        <strong>Criterios de logro:</strong>
+        el programa debe manejar rutas inválidas, mostrar las dimensiones
+        correctamente y producir las transformaciones solicitadas.
+    </div>
+
+    <a class="back" href="#inicio">Volver al índice ↑</a>
+</section>
+
+<!-- CRONOGRAMA -->
+
+<section>
+    <h2>7. Distribución sugerida de la clase</h2>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Actividad</th>
+                <th>Tiempo</th>
+                <th>Enfoque</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Ejemplo 1. Recorte de imágenes</td>
+                <td>20 minutos</td>
+                <td>Matrices, filas y columnas.</td>
+            </tr>
+            <tr>
+                <td>Ejemplo 2. Redimensionamiento y rotación</td>
+                <td>20 minutos</td>
+                <td>Dimensiones y proporciones.</td>
+            </tr>
+            <tr>
+                <td>Ejemplo 3. Figuras y anotaciones</td>
+                <td>25 minutos</td>
+                <td>Coordenadas y colores.</td>
+            </tr>
+            <tr>
+                <td>Ejemplo 4. Filtros y bordes</td>
+                <td>35 minutos</td>
+                <td>Procesamiento de imágenes.</td>
+            </tr>
+            <tr>
+                <td>Ejemplo 5. Mini proyecto</td>
+                <td>40 minutos</td>
+                <td>Integración de conocimientos.</td>
+            </tr>
+            <tr>
+                <td>Repaso y preguntas</td>
+                <td>10 minutos</td>
+                <td>Evaluación formativa.</td>
+            </tr>
+            <tr>
+                <th>Total</th>
+                <th>150 minutos</th>
+                <th>2 horas y 30 minutos</th>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<!-- REPASO -->
+
+<section id="repaso">
+    <h2>8. Repaso y evaluación rápida</h2>
+
+    <p>
+        Marca las competencias que ya puedes demostrar mediante código.
+    </p>
+
+    <label>
+        <input type="checkbox">
+        Puedo cargar una imagen y validar que se haya leído correctamente.
+    </label>
+    <br>
+
+    <label>
+        <input type="checkbox">
+        Puedo interpretar las dimensiones devueltas por <code>shape</code>.
+    </label>
+    <br>
+
+    <label>
+        <input type="checkbox">
+        Puedo recortar una región usando filas y columnas.
+    </label>
+    <br>
+
+    <label>
+        <input type="checkbox">
+        Puedo redimensionar una imagen conservando su proporción.
+    </label>
+    <br>
+
+    <label>
+        <input type="checkbox">
+        Puedo rotar imágenes y dibujar figuras sobre ellas.
+    </label>
+    <br>
+
+    <label>
+        <input type="checkbox">
+        Comprendo la diferencia entre BGR y RGB.
+    </label>
+    <br>
+
+    <label>
+        <input type="checkbox">
+        Puedo aplicar escala de grises, desenfoque y Canny.
+    </label>
+    <br>
+
+    <label>
+        <input type="checkbox">
+        Puedo integrar varias operaciones en un programa.
+    </label>
+
+    <h3>Preguntas de cierre</h3>
+
+    <ol>
+        <li>¿Cuál es la diferencia entre recortar y redimensionar?</li>
+        <li>¿Por qué <code>shape</code> y <code>resize()</code> presentan las dimensiones en distinto orden?</li>
+        <li>¿Qué ventaja tiene dibujar anotaciones sobre una copia?</li>
+        <li>¿Qué información se pierde al convertir una imagen a escala de grises?</li>
+        <li>¿Por qué detectar bordes no equivale a reconocer objetos?</li>
+    </ol>
+
+    <div class="success">
+        <strong>Conexión con la clase 3:</strong>
+        después de aprender a manipular imágenes, los estudiantes podrán
+        profundizar en umbralización, segmentación y detección de contornos.
+        Estos conceptos les permitirán separar regiones de interés y analizar
+        formas con mayor precisión.
+    </div>
+
+    <a class="back" href="#inicio">Volver al inicio ↑</a>
+</section>
+
+</main>
+
+<footer>
+    <p>
+        Material didáctico de Visión por Computadora con Python y OpenCV.
+        Los nombres de las imágenes son ejemplos y deben sustituirse por
+        archivos disponibles en el equipo del estudiante.
+    </p>
+</footer>
+
+</body>
+</html>
