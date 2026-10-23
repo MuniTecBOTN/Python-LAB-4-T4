@@ -11,12 +11,58 @@ if imagen is None:
 hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
 
 # Rango del color azul
-inferior = np.array([90, 80, 50])
-superior = np.array([130, 255, 255])
+rangos = {
+    "azul": (
+        np.array([90, 80, 50]),
+        np.array([130, 255, 255])   
+    ),
+    "granate": (
+        np.array([165, 80, 50]),
+        np.array([179, 255, 142])
+    ),
+    
+    "amarrillo": (
+        np.array([20, 89, 255]),
+        np.array([39, 255, 255])
+    ),
+    "verde": (
+        np.array([42, 98, 216]),
+        np.array([84, 255, 255])
+    ),
+    
+    "rojo": (
+        np.array([0, 80, 120]),
+        np.array([12, 255, 255])
+    ),
+        
+}
 
-mascara = cv2.inRange(
-    hsv, inferior, superior
+colores = {
+    "azul":(255,0,0),
+    "granate": (0,0, 150),
+    "amarillo": (0,255, 255),
+    "verde":  (0,180,0),
+    "rojo" : (0,0,255)
+}
+
+# Trabajar sobre una copia
+resultado = imagen.copy()
+
+
+mascara_total = np.zeros(
+    imagen.shape[:2], dtype=np.uint8
 )
+
+kernel = np.ones((3,3), np.uint8)
+
+contador = 0
+
+for color, (inferior, superior) in range.items():
+    
+    mascara = cv2.inRange(
+        hsv, inferior, superior
+    )
+
 
 # Buscar regiones conectadas en la máscara
 contornos, jerarquia = cv2.findContours(
@@ -25,15 +71,13 @@ contornos, jerarquia = cv2.findContours(
     cv2.CHAIN_APPROX_SIMPLE
 )
 
-# Trabajar sobre una copia
-resultado = imagen.copy()
-
-contador = 0
 
 for contorno in contornos:
 
     # Calcular el área de la región
     area = cv2.contourArea(contorno)
+    
+    print("Area: ", area)
 
     # Ignorar regiones demasiado pequeñas
     if area < 300:
@@ -51,7 +95,7 @@ for contorno in contornos:
         resultado,
         (x, y),
         (x + ancho, y + alto),
-        (0, 255, 0),
+        (255,0, 0),
         2
     )
 
