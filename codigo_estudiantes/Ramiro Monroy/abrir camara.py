@@ -1,119 +1,128 @@
+
 import cv2
-# Activar la camara web
-camara = cv2.VideoCapture(0)
 
-while camara.isOpened():
-    # capturar un fotograma
-    exito, fotograma = camara.read()
-    if not exito:
-        break
-    
-    altura_imagen, ancho_imagen, canales_color = imagen_original.shape
+# ==============================
+# CONFIGURACION
+# ==============================
+CAMARA_ID = 0
+UMBRAL = 127
+AREA_MINIMA = 10000
+ANCHO_MAXIMO = 800
 
-    print(
-    f"INF_IMAGEN: {altura_imagen}x"
-    f"{ancho_imagen}-{canales_color}"
-    )
+# Activar la camara
+camara = cv2.VideoCapture(CAMARA_ID)
 
-    # Convertir imagen a escala de grises
-    imagen_grises = cv2.cvtColor(
-    imagen_original,
-    cv2.COLOR_BGR2GRAY
-    )
+if not camara.isOpened():
+    raise RuntimeError("No se pudo abrir la camara web")
 
-    # Convertir a imagen binaria
-    _, imagen_binaria = cv2.threshold(
-        imagen_grises,
-        127,
-        255,
-        cv2.THRESH_BINARY_INV
-    )
+# Reducir latencia cuando el controlador lo permite
+camara.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
-    # Encontrar contornos externos
-    contornos, _ = cv2.findContours(
-        imagen_binaria,
-        cv2.RETR_EXTERNAL,
-        cv2.CHAIN_APPROX_SIMPLE
-    )
+try:
+    while True:
+        # Capturar fotograma
+        exito, fotograma = camara.read()
 
-    # Recorrer cada objeto detectado
-    for index, contorno in enumerate(contornos):
-        area = cv2.contourArea(contorno)
+        if not exito:
+            print("Error al capturar la imagen")
+            break
 
-        x_pi, y_pi, ancho_caja, alto_caja = (
-            cv2.boundingRect(contorno)
-        )
+        # Reducir resolucion para mejorar rendimiento
+        alto, ancho = fotograma.shape[:2]
 
-        # Dibujar rectángulo alrededor del objeto
-        cv2.rectangle(
-            imagen_original,
-            (x_pi, y_pi),
-            (x_pi + ancho_caja, y_pi + alto_caja),
-            (123, 255, 77),
-            2
-        )
-
-        # Dibujar contorno del objeto
-        cv2.drawContours(
-            imagen_original,
-            [contorno],
-            -1,
-            (255, 255, 0),
-            1
-        )
-
-        # Calcular posición de las etiquetas
-        x_etiqueta_objeto = max(0, x_pi - 10)
-        y_etiqueta_objeto = y_pi - 20
-
-        if y_etiqueta_objeto <= 0:
-            y_etiqueta_objeto = min(
-                altura_imagen - 5,
-                y_pi + alto_caja + 20
+        if ancho > ANCHO_MAXIMO:
+            alto_nuevo = int(alto * ANCHO_MAXIMO / ancho)
+            fotograma = cv2.resize(
+                fotograma,
+                (ANCHO_MAXIMO, alto_nuevo),
+                interpolation=cv2.INTER_AREA
             )
 
-        # Mostrar número del objeto
-        cv2.putText(
-            imagen_original,
-            f"OBJETO {index}",
-            (x_etiqueta_objeto, y_etiqueta_objeto),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (255, 26, 200),
-            2
+        altura, anchura = fotograma.shape[:2]
+
+        # Crear imagen de trabajo en escala de grises
+        gris = cv2.cvtColor(
+            fotograma,
+            cv2.COLOR_BGR2GRAY
         )
 
-        # Mostrar área del objeto
-        cv2.putText(
-            imagen_original,
-            f"Area: {area:.0f} px2",
-            (max(0, x_pi - 10), min(
-                altura_imagen - 5,
-                y_pi + alto_caja + 30
-            )),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.6,
-            (255, 26, 200),
-            2
+        # Aplicar un desenfoque leve para reducir ruido
+        gris = cv2.GaussianBlur(
+            gris,
+            (5, 5),
+            0
         )
 
-        # Mostrar información en la terminal
-        print(f"\nCONTORNO #{index}")
-        print(f"AREA: {area:.2f} px2")
+        # Umbral binario invertido
+        _, binaria = cv2.threshold(
+            gris,
+            UMBRAL,
+            255,
+            cv2.THRESH_BINARY_INV
+        )
 
-        for punto in contorno:
-            print(punto)
+        # Buscar contornos externos
+        contornos, _ = cv2.findContours(
+            binaria,
+            cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE
+        )
 
-    #Mostrar las imagenes
-    cv2.imshow("camara original", fotograma)
-    # Salir al presionar ESC
-    if cv2.waitKey(1) == 27:
-        break
-# Liberar la Camara
-camara.realease()
-cv2.destroyAllWindows()
+        numero_objeto = 0
 
+        for contorno in contornos:
+            # Filtrar antes de calcular el rectangulo
+            area = cv2.contourArea(contorno)
 
+            if area <= AREA_MINIMA:
+                continue
 
+            x, y, w, h = cv2.boundingRect(contorno)
+            numero_objeto += 1
 
+            # Dibujar rectangulo y contorno
+            cv2.rectangle(
+                fotograma,
+                (x, y),
+                (x + w, y + h),
+                (123, 255, 77),
+                2
+            )
 
+            cv2.drawContours(
+                fotograma,
+                [contorno],
+                -1,
+                (255, 255, 0),
+                1
+            )
+
+            # Etiqueta con numero y area
+            texto = f"OBJETO {numero_objeto} | Area: {area:.0f} px2"
+
+            # Evitar que el texto salga por encima de la imagen
+            y_texto = y - 10 if y >= 25 else min(altura - 5, y + h + 20)
+
+            cv2.putText(
+                fotograma,
+                texto,
+                (x, y_texto),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (255, 26, 200),
+                2,
+                cv2.LINE_AA
+            )
+
+        # Mostrar ambas ventanas
+        cv2.imshow("Camara - Deteccion de objetos", fotograma)
+        cv2.imshow("Imagen binaria", binaria)
+
+        # ESC para salir
+        if cv2.waitKey(1) & 0xFF == 27:
+            break
+
+finally:
+    # Liberar recursos incluso si ocurre un error
+    camara.release()
+    cv2.destroyAllWindows()
