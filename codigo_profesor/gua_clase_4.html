@@ -1719,6 +1719,500 @@ cv2.drawContours(
             </p>
         </section>
 
+<section id="seccion-9">
+    <h2>9. Detección de esquinas con Harris</h2>
+
+    <p>
+        El detector de Harris es un algoritmo de visión por computadora
+        que permite identificar esquinas en una imagen. Fue desarrollado
+        por Chris Harris y Mike Stephens en 1988 y se utiliza para
+        localizar puntos de interés que pueden servir para analizar
+        movimientos, comparar imágenes o realizar seguimiento de objetos.
+    </p>
+
+    <p>
+        Una esquina es un punto donde la intensidad de la imagen cambia
+        significativamente en más de una dirección. Por ejemplo, las
+        esquinas de una ventana, los vértices de un tablero o las
+        intersecciones de líneas pueden funcionar como puntos de interés.
+    </p>
+
+    <h3>9.1. ¿Qué es una esquina para una computadora?</h3>
+
+    <p>
+        Para comprender cómo funciona Harris, debemos observar cómo
+        cambia la intensidad de los píxeles alrededor de un punto.
+        Generalmente, podemos encontrar tres situaciones:
+    </p>
+
+    <ul>
+        <li>
+            <strong>Región plana:</strong> los píxeles presentan cambios
+            pequeños en cualquier dirección.
+        </li>
+        <li>
+            <strong>Borde:</strong> la intensidad cambia principalmente
+            en una dirección.
+        </li>
+        <li>
+            <strong>Esquina:</strong> la intensidad cambia de forma
+            significativa en dos direcciones.
+        </li>
+    </ul>
+
+    <svg viewBox="0 0 340 150" width="100%"
+         role="img"
+         aria-label="Comparación de una región plana, un borde y una esquina."
+         xmlns="http://www.w3.org/2000/svg">
+
+        <g>
+            <rect x="8" y="12" width="96" height="95"
+                  fill="#d1d5db" stroke="#94a3b8"/>
+            <text x="56" y="130" font-size="12"
+                  text-anchor="middle" fill="currentColor">Región plana</text>
+
+            <rect x="122" y="12" width="96" height="95"
+                  fill="#e5e7eb" stroke="#94a3b8"/>
+            <rect x="170" y="12" width="48" height="95"
+                  fill="#374151"/>
+            <text x="170" y="130" font-size="12"
+                  text-anchor="middle" fill="currentColor">Borde</text>
+
+            <rect x="236" y="12" width="96" height="95"
+                  fill="#e5e7eb" stroke="#94a3b8"/>
+            <path d="M284 12 H332 V60 H284 Z"
+                  fill="#374151"/>
+            <circle cx="284" cy="60" r="5"
+                    fill="#16a34a" stroke="#ffffff" stroke-width="1.5"/>
+            <text x="284" y="130" font-size="12"
+                  text-anchor="middle" fill="currentColor">Esquina</text>
+        </g>
+    </svg>
+
+    <h3>9.2. ¿Cómo funciona el detector de Harris?</h3>
+
+    <p>
+        Harris analiza cómo cambia una pequeña ventana de la imagen
+        cuando se desplaza ligeramente en diferentes direcciones.
+        Si el desplazamiento produce cambios importantes en la intensidad
+        en dos direcciones, el punto puede corresponder a una esquina.
+    </p>
+
+    <p>
+        Internamente, utiliza las derivadas de intensidad de la imagen
+        para construir una matriz que resume los cambios locales.
+        A partir de esa matriz calcula una puntuación denominada
+        respuesta de Harris:
+    </p>
+
+    <pre><code>R = det(M) - k * (trace(M) ** 2)</code></pre>
+
+    <p>Donde:</p>
+
+    <ul>
+        <li>
+            <code>M</code> es la matriz que resume los cambios de
+            intensidad en una ventana local.
+        </li>
+        <li>
+            <code>det(M)</code> es el determinante de esa matriz.
+        </li>
+        <li>
+            <code>trace(M)</code> es la suma de sus elementos diagonales.
+        </li>
+        <li>
+            <code>k</code> es un parámetro empírico, normalmente cercano
+            a 0.04 o 0.06.
+        </li>
+    </ul>
+
+    <p>
+        La respuesta permite distinguir entre regiones planas, bordes
+        y posibles esquinas. Una respuesta positiva elevada suele indicar
+        una esquina fuerte.
+    </p>
+
+    <h3>9.3. Función cv2.cornerHarris()</h3>
+
+    <p>
+        OpenCV implementa el detector mediante
+        <code>cv2.cornerHarris()</code>.
+    </p>
+
+    <pre><code>respuesta = cv2.cornerHarris(
+    imagen_gris,
+    blockSize=2,
+    ksize=3,
+    k=0.04
+)</code></pre>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Parámetro</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>imagen_gris</code></td>
+                <td>Imagen de un solo canal y tipo de datos compatible, normalmente <code>float32</code>.</td>
+            </tr>
+            <tr>
+                <td><code>blockSize</code></td>
+                <td>Tamaño de la vecindad utilizada para calcular los cambios locales.</td>
+            </tr>
+            <tr>
+                <td><code>ksize</code></td>
+                <td>Tamaño del kernel utilizado para calcular las derivadas mediante Sobel.</td>
+            </tr>
+            <tr>
+                <td><code>k</code></td>
+                <td>Constante utilizada en la fórmula de Harris.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>
+        La función devuelve una matriz de respuestas. Los valores altos
+        permiten identificar las ubicaciones que tienen características
+        similares a las esquinas.
+    </p>
+
+    <h3>9.4. Ejemplo completo en Python</h3>
+
+    <pre><code>import cv2
+import numpy as np
+
+# Cargar la imagen
+imagen = cv2.imread("objetos.png")
+
+if imagen is not None:
+
+    # Convertir a escala de grises
+    gris = cv2.cvtColor(
+        imagen,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    # Convertir a float32
+    gris_float = np.float32(gris)
+
+    # Detectar esquinas con Harris
+    respuesta = cv2.cornerHarris(
+        gris_float,
+        blockSize=2,
+        ksize=3,
+        k=0.04
+    )
+
+    # Dilatar para hacer más visibles las respuestas
+    respuesta = cv2.dilate(
+        respuesta,
+        None
+    )
+
+    # Copiar la imagen original
+    resultado = imagen.copy()
+
+    # Marcar las respuestas suficientemente altas
+    resultado[respuesta > 0.01 * respuesta.max()] = [
+        0, 0, 255
+    ]
+
+    # Mostrar resultados
+    cv2.imshow("Imagen original", imagen)
+    cv2.imshow("Esquinas Harris", resultado)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+else:
+    print("No se pudo cargar la imagen.")</code></pre>
+
+    <p>
+        En este ejemplo, las esquinas detectadas se marcan en rojo.
+        El umbral de <code>0.01 * respuesta.max()</code> permite
+        seleccionar las respuestas que superan el 1 % de la respuesta
+        máxima de la imagen. Este valor es ajustable y puede necesitar
+        cambios según la imagen.
+    </p>
+
+    <h3>9.5. ¿Para qué sirve la dilatación?</h3>
+
+    <p>
+        La función <code>cv2.dilate()</code> amplía las regiones claras
+        de una matriz. En este ejemplo, se utiliza para que las respuestas
+        de Harris sean más visibles. No es la operación que detecta las
+        esquinas; esa tarea la realiza <code>cv2.cornerHarris()</code>.
+    </p>
+
+    <h3>9.6. Ejercicio de práctica</h3>
+
+    <ol>
+        <li>Utiliza una imagen de un edificio, una ventana o un tablero.</li>
+        <li>Ejecuta el detector de Harris con <code>blockSize=2</code>.</li>
+        <li>Prueba con <code>blockSize=5</code>.</li>
+        <li>Modifica el umbral de selección de esquinas.</li>
+        <li>Compara la cantidad y la ubicación de las esquinas resaltadas.</li>
+    </ol>
+
+    <p>
+        <strong>Conclusión:</strong> Harris detecta esquinas mediante
+        el análisis de cambios de intensidad en distintas direcciones.
+        Es útil para localizar puntos de interés, aunque su resultado
+        puede incluir respuestas cercanas o múltiples alrededor de una
+        misma esquina.
+    </p>
+</section>
+
+
+<section id="seccion-10">
+    <h2>10. Detección de esquinas con Shi-Tomasi</h2>
+
+    <p>
+        Shi-Tomasi es otro detector de esquinas utilizado en visión
+        por computadora. Fue propuesto por Jianbo Shi y Carlo Tomasi
+        en 1994 y se relaciona con el detector de Harris.
+    </p>
+
+    <p>
+        Ambos métodos buscan puntos donde la intensidad de la imagen
+        cambia en más de una dirección. Sin embargo, utilizan criterios
+        diferentes para determinar qué puntos son buenos candidatos
+        para ser esquinas.
+    </p>
+
+    <h3>10.1. ¿Cómo funciona Shi-Tomasi?</h3>
+
+    <p>
+        Al igual que Harris, Shi-Tomasi calcula una matriz que resume
+        los cambios de intensidad dentro de una ventana local. Esta
+        matriz tiene dos valores propios, denominados
+        <code>lambda1</code> y <code>lambda2</code>.
+    </p>
+
+    <p>
+        Shi-Tomasi utiliza el menor de esos dos valores para evaluar
+        la calidad del punto:
+    </p>
+
+    <pre><code>R = min(lambda1, lambda2)</code></pre>
+
+    <p>La interpretación es la siguiente:</p>
+
+    <ul>
+        <li>
+            <strong>Ambos valores pequeños:</strong> región plana,
+            con pocos cambios de intensidad.
+        </li>
+        <li>
+            <strong>Un valor grande y otro pequeño:</strong> posible
+            borde, porque el cambio es fuerte principalmente en una
+            dirección.
+        </li>
+        <li>
+            <strong>Ambos valores grandes:</strong> posible esquina,
+            porque los cambios son importantes en dos direcciones.
+        </li>
+    </ul>
+
+    <p>
+        El algoritmo considera buenos candidatos a los puntos cuyo
+        menor valor propio es suficientemente grande.
+    </p>
+
+    <h3>10.2. Función cv2.goodFeaturesToTrack()</h3>
+
+    <p>
+        OpenCV permite detectar esquinas mediante
+        <code>cv2.goodFeaturesToTrack()</code>. Esta función puede
+        utilizar el criterio de Shi-Tomasi de manera predeterminada.
+    </p>
+
+    <pre><code>esquinas = cv2.goodFeaturesToTrack(
+    imagen_gris,
+    maxCorners=100,
+    qualityLevel=0.01,
+    minDistance=10,
+    blockSize=3,
+    useHarrisDetector=False
+)</code></pre>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Parámetro</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>imagen_gris</code></td>
+                <td>Imagen de entrada de un solo canal, normalmente de 8 bits.</td>
+            </tr>
+            <tr>
+                <td><code>maxCorners</code></td>
+                <td>Número máximo de esquinas que se desea obtener. Si es 0 o menor, no se establece ese límite.</td>
+            </tr>
+            <tr>
+                <td><code>qualityLevel</code></td>
+                <td>Umbral relativo de calidad. Por ejemplo, 0.01 permite considerar puntos con una calidad de al menos el 1 % del máximo.</td>
+            </tr>
+            <tr>
+                <td><code>minDistance</code></td>
+                <td>Distancia mínima aproximada entre las esquinas seleccionadas, en píxeles.</td>
+            </tr>
+            <tr>
+                <td><code>blockSize</code></td>
+                <td>Tamaño de la vecindad usada para evaluar cada punto.</td>
+            </tr>
+            <tr>
+                <td><code>useHarrisDetector</code></td>
+                <td>Si es <code>False</code>, utiliza el criterio de Shi-Tomasi; si es <code>True</code>, utiliza Harris.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>10.3. Ejemplo completo en Python</h3>
+
+    <pre><code>import cv2
+
+# Cargar la imagen
+imagen = cv2.imread("objetos.png")
+
+if imagen is not None:
+
+    # Convertir a escala de grises
+    gris = cv2.cvtColor(
+        imagen,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    # Detectar esquinas con Shi-Tomasi
+    esquinas = cv2.goodFeaturesToTrack(
+        gris,
+        maxCorners=100,
+        qualityLevel=0.01,
+        minDistance=10,
+        blockSize=3,
+        useHarrisDetector=False
+    )
+
+    # Copiar la imagen original
+    resultado = imagen.copy()
+
+    # Dibujar las esquinas detectadas
+    if esquinas is not None:
+
+        esquinas = esquinas.astype(int)
+
+        for esquina in esquinas:
+            x, y = esquina.ravel()
+
+            cv2.circle(
+                resultado,
+                (x, y),
+                5,
+                (0, 0, 255),
+                -1
+            )
+
+        print("Esquinas detectadas:", len(esquinas))
+
+    else:
+        print("No se detectaron esquinas.")
+
+    # Mostrar los resultados
+    cv2.imshow("Imagen original", imagen)
+    cv2.imshow("Esquinas Shi-Tomasi", resultado)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+else:
+    print("No se pudo cargar la imagen.")</code></pre>
+
+    <p>
+        En este ejemplo, cada esquina detectada se representa mediante
+        un círculo rojo. La función devuelve las coordenadas de los
+        puntos seleccionados, no una imagen binaria de contornos.
+    </p>
+
+    <h3>10.4. ¿Por qué se llama goodFeaturesToTrack?</h3>
+
+    <p>
+        El nombre significa, aproximadamente, «buenas características
+        para seguir». Los puntos detectados pueden utilizarse para
+        realizar seguimiento entre fotogramas de un video mediante
+        algoritmos como <code>cv2.calcOpticalFlowPyrLK()</code>.
+    </p>
+
+    <p>
+        Para que el seguimiento funcione correctamente, las esquinas
+        deben ser suficientemente distintivas y mantenerse visibles
+        entre los fotogramas. Si un objeto desaparece, cambia mucho de
+        apariencia o queda oculto, el seguimiento puede fallar.
+    </p>
+
+    <h3>10.5. Comparación entre Harris y Shi-Tomasi</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Harris</th>
+                <th>Shi-Tomasi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Objetivo</td>
+                <td>Detectar esquinas.</td>
+                <td>Detectar esquinas de buena calidad.</td>
+            </tr>
+            <tr>
+                <td>Criterio</td>
+                <td><code>det(M) - k(trace(M))²</code></td>
+                <td><code>min(lambda1, lambda2)</code></td>
+            </tr>
+            <tr>
+                <td>Función habitual</td>
+                <td><code>cv2.cornerHarris()</code></td>
+                <td><code>cv2.goodFeaturesToTrack()</code></td>
+            </tr>
+            <tr>
+                <td>Resultado habitual</td>
+                <td>Matriz de respuestas.</td>
+                <td>Lista de coordenadas de esquinas seleccionadas.</td>
+            </tr>
+            <tr>
+                <td>Control de cantidad y separación</td>
+                <td>Se suele aplicar selección posterior.</td>
+                <td>Dispone de parámetros como <code>maxCorners</code> y <code>minDistance</code>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>10.6. Ejercicio de práctica</h3>
+
+    <ol>
+        <li>Selecciona una imagen que contenga esquinas bien definidas.</li>
+        <li>Detecta las esquinas con Shi-Tomasi usando <code>maxCorners=50</code>.</li>
+        <li>Cambia el valor a 150 y compara los resultados.</li>
+        <li>Modifica <code>minDistance</code> para controlar la separación entre los puntos.</li>
+        <li>Activa <code>useHarrisDetector=True</code> y compara el resultado con el criterio de Shi-Tomasi.</li>
+    </ol>
+
+    <p>
+        <strong>Conclusión:</strong> Shi-Tomasi permite seleccionar
+        puntos de interés que presentan cambios de intensidad
+        significativos en dos direcciones. Su función
+        <code>cv2.goodFeaturesToTrack()</code> facilita la selección de
+        esquinas y resulta especialmente útil para el seguimiento de
+        puntos en secuencias de imágenes.
+    </p>
+</section>
 
         <!-- RESUMEN -->
 
