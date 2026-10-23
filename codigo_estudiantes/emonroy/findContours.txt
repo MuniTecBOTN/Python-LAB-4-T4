@@ -1,0 +1,56 @@
+findContours es una función de la biblioteca de visión por computadora OpenCV que detecta y extrae los contornos o límites de los objetos presentes en una imagen binaria (blanco y negro). Se utiliza habitualmente en tareas de reconocimiento de formas, detección de objetos y análisis de imágenes. [1, 2, 3, 4, 5]
+Cómo funciona
+* Imagen de entrada: Requiere una imagen binarizada (por lo general, objetos blancos sobre un fondo negro). [1]
+* Parámetros principales:
+o Modo de recuperación: Define cómo se organizan los contornos (por ejemplo, si solo busca los externos o una jerarquía completa de padres e hijos).
+o Método de aproximación: Controla la cantidad de puntos que guardan los contornos (por ejemplo, CHAIN_APPROX_SIMPLE comprime segmentos rectos para ahorrar memoria). [1, 2, 3, 4]
+* Resultados: Devuelve una lista con las coordenadas de los contornos detectados y, opcionalmente, la estructura jerárquica entre ellos. [1, 2]
+Aquí tienes un ejemplo básico y práctico en Python utilizando OpenCV.
+Este código realiza el flujo de trabajo estándar: carga una imagen, la preprocesa (escala de grises y binarización), detecta los contornos con cv2.findContours y finalmente los dibuja.
+Explicación de los puntos clave:
+* cv2.threshold: findContours funciona mejor con imágenes puramente en blanco y negro (binarias). Este paso asegura que los bordes estén claramente definidos.
+* contornos: Es una lista de Python. Cada elemento de la lista es un arreglo de coordenadas (x, y) que forman el borde de un objeto.
+* cv2.drawContours: Modifica la imagen original (o una copia) pintando las líneas sobre los bordes que descubrió en el paso anterior.
+
+
+
+import cv2
+
+# 1. Cargar la imagen original
+# (Reemplaza 'objeto.jpg' con la ruta de tu imagen)
+imagen = cv2.imread('ososo.jpg')
+
+if imagen is None:
+    print("Error: No se pudo cargar la imagen. Revisa la ruta.")
+    exit()
+
+# 2. Preprocesamiento (Paso obligatorio)
+# Convertir a escala de grises
+gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+
+# Aplicar un umbral (Binarización) para dejar el objeto blanco y el fondo negro
+# Puedes ajustar el valor 127 según la iluminación de tu imagen
+_, binaria = cv2.threshold(gris, 127, 255, cv2.THRESH_BINARY)
+
+# 3. Encontrar los contornos
+# - cv2.RETR_EXTERNAL: Recupera solo los contornos externos más externos.
+# - cv2.CHAIN_APPROX_SIMPLE: Comprime los segmentos horizontales, verticales y diagonales para ahorrar memoria.
+contornos, jerarquia = cv2.findContours(binaria, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+# 4. Dibujar los contornos sobre la imagen original
+# - El parámetro -1 indica que se deben dibujar TODOS los contornos encontrados.
+# - (0, 255, 0) es el color en formato BGR (Verde en este caso).
+# - El último parámetro (2) es el grosor de la línea en píxeles.
+cv2.drawContours(imagen, contornos, -1, (0, 255, 0), 2)
+
+# Mostrar el número de objetos detectados en la consola
+print(f"Se encontraron {len(contornos)} objetos/contornos.")
+
+# 5. Mostrar los resultados en ventanas
+cv2.imshow('Imagen Binaria (Entrada)', binaria)
+cv2.imshow('Contornos Detectados (Resultado)', imagen)
+
+# Esperar a que el usuario presione una tecla y cerrar las ventanas
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
