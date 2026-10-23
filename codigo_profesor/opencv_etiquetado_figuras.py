@@ -1,12 +1,26 @@
 import cv2
 import numpy as np
 
-imagen = cv2.imread("figuras.jpg")
+imagen_original = cv2.imread("figuras.jpg")
 
-if imagen is None:
+if imagen_original is None:
     raise FileNotFoundError(
         "No se encontró figuras.jpg"
     )
+
+# Obtener dimensiones originales
+alto, ancho, _ = imagen_original.shape
+
+# Calcular la nueva altura manteniendo la proporción
+relacion_aspecto = alto / ancho
+ancho_nuevo = 800
+alto_nuevo = int(relacion_aspecto * ancho_nuevo)
+
+
+imagen = cv2.resize(
+    imagen_original,
+    (ancho_nuevo, alto_nuevo)
+) 
 
 hsv = cv2.cvtColor(imagen, cv2.COLOR_BGR2HSV)
 
@@ -29,12 +43,12 @@ contornos, jerarquia = cv2.findContours(
 resultado = imagen.copy()
 
 contador = 0
-
+print(contornos)
 for contorno in contornos:
 
     # Calcular el área de la región
     area = cv2.contourArea(contorno)
-
+    print("Área del contorno:", area)
     # Ignorar regiones demasiado pequeñas
     if area < 300:
         continue
