@@ -1,7 +1,7 @@
 
 import cv2
 import numpy as np
-objeto = "control"
+objeto = "objeto_negro1"
 # Cargar imagen de referencia
 plantilla = cv2.imread(f"{objeto}.jpg")
 #plantilla = cv2.resize(plantilla, (640, 480))
