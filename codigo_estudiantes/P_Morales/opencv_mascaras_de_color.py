@@ -2,13 +2,13 @@ import cv2
 import numpy as np
 
 
-imagen_original = cv2.imread("bert_cajero.jpg")
+fotograma = cv2.imread("bert_cajero.jpg")
 
-if imagen_original is None:
+if fotograma is None:
     raise FileNotFoundError("No se encontró bert_cajero.jpg")
 
 
-alto, ancho, _ = imagen_original.shape
+alto, ancho, _ = fotograma.shape
 
 
 relacion_aspecto = alto / ancho
@@ -17,7 +17,7 @@ alto_nuevo = int(relacion_aspecto * ancho_nuevo)
 
 
 imagen_redimensionada = cv2.resize(
-    imagen_original,
+    fotograma,
     (ancho_nuevo, alto_nuevo),
 )
 
