@@ -1,0 +1,2374 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCV: Análisis de contornos</title>
+
+    <style>
+        :root {
+            --fondo: #f4f7fb;
+            --blanco: #ffffff;
+            --azul: #2563eb;
+            --azul-oscuro: #172554;
+            --verde: #059669;
+            --amarillo: #f59e0b;
+            --rojo: #dc2626;
+            --texto: #243047;
+            --gris: #64748b;
+            --borde: #dce4ef;
+            --codigo: #101827;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: var(--fondo);
+            color: var(--texto);
+            font-family: "Segoe UI", Arial, sans-serif;
+            line-height: 1.7;
+        }
+
+        header {
+            background: var(--azul-oscuro);
+            color: white;
+            padding: 55px 20px;
+            text-align: center;
+        }
+
+        header h1 {
+            margin: 0 0 12px;
+            font-size: clamp(28px, 5vw, 44px);
+        }
+
+        header p {
+            max-width: 750px;
+            margin: auto;
+            color: #cbd5e1;
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: white;
+            border-bottom: 1px solid var(--borde);
+            padding: 12px;
+            text-align: center;
+        }
+
+        nav a {
+            display: inline-block;
+            margin: 4px 10px;
+            color: var(--azul);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        nav a:hover {
+            text-decoration: underline;
+        }
+
+        main {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 18px;
+        }
+
+        section {
+            margin-bottom: 32px;
+            padding: 28px;
+            background: var(--blanco);
+            border: 1px solid var(--borde);
+            border-radius: 16px;
+        }
+
+        h2 {
+            color: var(--azul-oscuro);
+            font-size: 28px;
+            margin-top: 0;
+        }
+
+        h3 {
+            margin-top: 28px;
+            color: var(--azul-oscuro);
+        }
+
+        p {
+            margin: 12px 0;
+        }
+
+        code {
+            color: #075985;
+            background: #eaf3ff;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        pre {
+            background: var(--codigo);
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+
+        .etiqueta {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            background: #dbeafe;
+            color: #1d4ed8;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .rejilla {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 18px;
+            margin: 22px 0;
+        }
+
+        .tarjeta {
+            padding: 18px;
+            background: #f8fafc;
+            border: 1px solid var(--borde);
+            border-radius: 12px;
+        }
+
+        .tarjeta h3 {
+            margin-top: 0;
+        }
+
+        .ilustracion {
+            width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            background: #111827;
+        }
+
+        .pie {
+            color: var(--gris);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .nota {
+            margin: 20px 0;
+            padding: 15px 18px;
+            border-left: 5px solid var(--amarillo);
+            background: #fffbeb;
+            border-radius: 5px;
+        }
+
+        .exito {
+            margin: 20px 0;
+            padding: 15px 18px;
+            border-left: 5px solid var(--verde);
+            background: #ecfdf5;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid var(--borde);
+            text-align: left;
+        }
+
+        th {
+            background: #eff6ff;
+            color: var(--azul-oscuro);
+        }
+
+        .tabla-contenedor {
+            overflow-x: auto;
+        }
+
+        button {
+            background: var(--azul);
+            color: white;
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .resultado {
+            padding: 15px;
+            margin-top: 15px;
+            background: #eff6ff;
+            border-radius: 8px;
+            white-space: pre-line;
+        }
+
+        footer {
+            padding: 30px 20px;
+            text-align: center;
+            background: var(--azul-oscuro);
+            color: #cbd5e1;
+        }
+
+        @media (max-width: 600px) {
+            section {
+                padding: 18px;
+            }
+
+            header {
+                padding: 35px 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <span class="etiqueta">VISIÓN POR COMPUTADORA</span>
+        <h1>Análisis de contornos con OpenCV</h1>
+        <p>
+            Aprende a detectar objetos, calcular su área y encontrar
+            sus dimensiones utilizando Python y OpenCV.
+        </p>
+    </header>
+
+    <nav>
+        <a href="#conceptos">Conceptos</a>
+        <a href="#findcontours">findContours()</a>
+        <a href="#contourarea">contourArea()</a>
+        <a href="#boundingrect">boundingRect()</a>
+        <a href="#ejemplo">Ejemplo completo</a>
+        <a href="#resumen">Resumen</a>
+    </nav>
+
+    <main>
+
+        <!-- INTRODUCCIÓN -->
+
+        <section id="conceptos">
+            <h2>1. ¿Qué es un contorno?</h2>
+
+            <p>
+                Un contorno es una curva que representa el límite de
+                un objeto dentro de una imagen. OpenCV permite encontrar
+                estos límites para analizar las formas presentes en una imagen.
+            </p>
+
+            <div class="rejilla">
+
+                <div class="tarjeta">
+                    <h3>Imagen binaria</h3>
+
+                    <svg class="ilustracion" viewBox="0 0 300 200" role="img"
+                        aria-label="Círculo blanco sobre fondo negro">
+                        <rect width="300" height="200" fill="#111827" />
+                        <circle cx="150" cy="100" r="55" fill="#ffffff" />
+                        <text x="150" y="185" text-anchor="middle" fill="#cbd5e1" font-size="12">
+                            Objeto blanco
+                        </text>
+                    </svg>
+
+                    <p>
+                        Los objetos de interés aparecen en blanco
+                        y el fondo aparece en negro.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Contorno detectado</h3>
+
+                    <svg class="ilustracion" viewBox="0 0 300 200" role="img"
+                        aria-label="Contorno verde alrededor de un círculo">
+                        <rect width="300" height="200" fill="#111827" />
+                        <circle cx="150" cy="100" r="55" fill="#ffffff" fill-opacity="0.08" stroke="#10b981"
+                            stroke-width="3" />
+                        <circle cx="150" cy="45" r="4" fill="#fbbf24" />
+                        <circle cx="205" cy="100" r="4" fill="#fbbf24" />
+                        <circle cx="150" cy="155" r="4" fill="#fbbf24" />
+                        <circle cx="95" cy="100" r="4" fill="#fbbf24" />
+                        <text x="150" y="185" text-anchor="middle" fill="#cbd5e1" font-size="12">
+                            Borde del objeto
+                        </text>
+                    </svg>
+
+                    <p>
+                        El contorno representa los puntos que delimitan
+                        la figura.
+                    </p>
+                </div>
+
+            </div>
+
+            <h3>Preparación de una imagen</h3>
+
+            <p>
+                Antes de buscar contornos, normalmente se convierte la
+                imagen a escala de grises y después a una imagen binaria.
+            </p>
+
+            <pre><code>import cv2
+
+imagen = cv2.imread("figuras.png")
+
+gris = cv2.cvtColor(
+    imagen,
+    cv2.COLOR_BGR2GRAY
+)
+
+_, binaria = cv2.threshold(
+    gris,
+    127,
+    255,
+    cv2.THRESH_BINARY
+)</code></pre>
+
+            <div class="nota">
+                <strong>Importante:</strong>
+                <code>findContours()</code> trabaja habitualmente con
+                imágenes binarias de un canal. Los objetos que deseas
+                detectar deben distinguirse del fondo.
+            </div>
+        </section>
+
+
+        <!-- FINDCONTOURS -->
+
+        <section id="findcontours">
+            <span class="etiqueta">MÉTODO 1</span>
+            <h2>2. findContours()</h2>
+
+            <p>
+                El método <code>cv2.findContours()</code> busca los
+                contornos de los objetos presentes en una imagen.
+                Devuelve una colección de contornos y su información
+                jerárquica.
+            </p>
+
+            <h3>Sintaxis</h3>
+
+            <pre><code>contornos, jerarquia = cv2.findContours(
+    imagen,
+    modo,
+    metodo
+)</code></pre>
+
+            <h3>¿Cómo funciona?</h3>
+
+            <svg class="ilustracion" viewBox="0 0 700 260" role="img" aria-label="Proceso de detección de contornos">
+                <rect width="700" height="260" rx="12" fill="#111827" />
+
+                <rect x="20" y="45" width="185" height="150" rx="8" fill="#202c40" />
+
+                <rect x="40" y="65" width="145" height="110" fill="#050a12" />
+
+                <circle cx="85" cy="105" r="25" fill="white" />
+                <rect x="120" y="125" width="45" height="35" fill="white" />
+
+                <text x="112" y="25" text-anchor="middle" fill="#ffffff" font-size="14">
+                    Imagen binaria
+                </text>
+
+                <path d="M 215 120 L 255 120" stroke="#fbbf24" stroke-width="3" fill="none" />
+                <path d="M 245 110 L 255 120 L 245 130" stroke="#fbbf24" stroke-width="3" fill="none" />
+
+                <rect x="265" y="45" width="165" height="150" rx="8" fill="#202c40" />
+
+                <circle cx="315" cy="105" r="25" fill="none" stroke="#10b981" stroke-width="3" />
+
+                <rect x="350" y="125" width="45" height="35" fill="none" stroke="#10b981" stroke-width="3" />
+
+                <text x="347" y="25" text-anchor="middle" fill="#ffffff" font-size="14">
+                    Contornos
+                </text>
+
+                <path d="M 440 120 L 480 120" stroke="#fbbf24" stroke-width="3" fill="none" />
+                <path d="M 470 110 L 480 120 L 470 130" stroke="#fbbf24" stroke-width="3" fill="none" />
+
+                <rect x="490" y="45" width="190" height="150" rx="8" fill="#202c40" />
+
+                <text x="585" y="83" text-anchor="middle" fill="#10b981" font-size="15">
+                    contornos[0]
+                </text>
+                <text x="585" y="112" text-anchor="middle" fill="#ffffff" font-size="13">
+                    Puntos del círculo
+                </text>
+                <text x="585" y="137" text-anchor="middle" fill="#ffffff" font-size="13">
+                    o figura
+                </text>
+                <text x="585" y="162" text-anchor="middle" fill="#cbd5e1" font-size="12">
+                    Coordenadas (x, y)
+                </text>
+
+                <text x="350" y="235" text-anchor="middle" fill="#cbd5e1" font-size="13">
+                    Detectar límites → almacenar puntos → analizar objetos
+                </text>
+            </svg>
+
+            <h3>Parámetros de la función</h3>
+
+            <div class="rejilla">
+
+                <div class="tarjeta">
+                    <h3>1. imagen</h3>
+                    <p>
+                        Es la imagen binaria en la que se buscarán
+                        los contornos.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>2. modo</h3>
+                    <p>
+                        Define qué contornos se recuperan y cómo
+                        se organizan.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>3. metodo</h3>
+                    <p>
+                        Define cómo se almacenan los puntos de cada
+                        contorno.
+                    </p>
+                </div>
+
+            </div>
+
+            <h3>Modos de recuperación</h3>
+
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Modo</th>
+                            <th>Funcionamiento</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td><code>RETR_EXTERNAL</code></td>
+                            <td>Recupera únicamente los contornos externos.</td>
+                        </tr>
+
+                        <tr>
+                            <td><code>RETR_LIST</code></td>
+                            <td>Recupera todos los contornos sin jerarquía.</td>
+                        </tr>
+
+                        <tr>
+                            <td><code>RETR_TREE</code></td>
+                            <td>Recupera los contornos y su jerarquía completa.</td>
+                        </tr>
+
+                        <tr>
+                            <td><code>RETR_CCOMP</code></td>
+                            <td>Organiza los contornos en dos niveles jerárquicos.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Métodos de aproximación</h3>
+
+            <p>
+                <code>cv2.CHAIN_APPROX_SIMPLE</code> conserva los puntos
+                necesarios para representar el contorno y comprime los
+                segmentos rectos.
+            </p>
+
+            <p>
+                <code>cv2.CHAIN_APPROX_NONE</code> conserva todos los
+                puntos que forman el contorno.
+            </p>
+
+            <h3>Ejemplo de código</h3>
+
+            <pre><code>contornos, jerarquia = cv2.findContours(
+    binaria,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+print("Objetos detectados:", len(contornos))</code></pre>
+
+            <div class="exito">
+                <strong>Resultado:</strong>
+                <code>contornos</code> contiene los puntos de cada
+                contorno detectado. Con <code>len(contornos)</code>
+                puedes conocer cuántos contornos se encontraron.
+            </div>
+
+            <p>
+                <strong>Jerarquía:</strong> el segundo valor contiene
+                información sobre las relaciones entre los contornos.
+                Si solo necesitas los contornos externos, puedes
+                utilizar <code>RETR_EXTERNAL</code>.
+            </p>
+        </section>
+
+        <section class="seccion-contornos">
+            <h2>Contornos y jerarquía en OpenCV</h2>
+
+            <p>
+                En OpenCV, los contornos son curvas que unen los puntos que delimitan
+                las regiones de una imagen. Se utilizan para identificar objetos,
+                calcular sus áreas, determinar sus dimensiones y analizar sus formas.
+            </p>
+
+            <h3>1. ¿Cómo encontrar contornos?</h3>
+
+            <p>
+                La función <code>cv2.findContours()</code> permite detectar los
+                contornos presentes en una imagen binaria. Generalmente, los objetos
+                que queremos detectar deben estar en blanco (255) y el fondo en
+                negro (0).
+            </p>
+
+            <pre><code>contornos, jerarquia = cv2.findContours(
+    mascara,
+    cv2.RETR_TREE,
+    cv2.CHAIN_APPROX_SIMPLE
+)</code></pre>
+
+            <ul>
+                <li>
+                    <strong>contornos:</strong> contiene los puntos que delimitan
+                    cada contorno detectado.
+                </li>
+                <li>
+                    <strong>jerarquia:</strong> contiene información sobre las
+                    relaciones entre los contornos.
+                </li>
+            </ul>
+
+            <h3>2. Ejemplo visual de contornos anidados</h3>
+
+            <p>
+                Observa la siguiente imagen. Hay tres contornos: uno exterior,
+                otro dentro de este y un tercero dentro del segundo.
+            </p>
+
+            <svg viewBox="0 0 340 220" width="100%" role="img"
+                aria-label="Tres contornos anidados: el contorno 0 contiene al 1 y el contorno 1 contiene al 2."
+                xmlns="http://www.w3.org/2000/svg">
+
+                <rect x="20" y="15" width="300" height="190" fill="#f3f4f6" stroke="#16803d" stroke-width="3" />
+
+                <rect x="70" y="50" width="200" height="120" fill="#202020" stroke="#dc2626" stroke-width="3" />
+
+                <rect x="125" y="85" width="90" height="50" fill="#f3f4f6" stroke="#2563eb" stroke-width="3" />
+
+                <g font-size="13" font-weight="bold">
+                    <text x="30" y="35" fill="#16803d">Contorno 0</text>
+                    <text x="80" y="70" fill="#dc2626">Contorno 1</text>
+                    <text x="130" y="105" fill="#2563eb">Contorno 2</text>
+                </g>
+            </svg>
+
+            <p>
+                En este ejemplo, el contorno 0 es el exterior; el contorno 1 está
+                dentro del contorno 0; y el contorno 2 está dentro del contorno 1.
+                Esta relación se representa mediante la jerarquía.
+            </p>
+
+            <h3>3. ¿Qué es la jerarquía?</h3>
+
+            <p>
+                La jerarquía es una estructura que indica cómo se relacionan los
+                contornos entre sí. OpenCV representa cada contorno mediante un
+                vector de cuatro valores:
+            </p>
+
+            <pre><code>[siguiente, anterior, primer_hijo, padre]</code></pre>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Posición</th>
+                        <th>Valor</th>
+                        <th>Significado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>0</td>
+                        <td><code>siguiente</code></td>
+                        <td>Índice del siguiente contorno del mismo nivel.</td>
+                    </tr>
+                    <tr>
+                        <td>1</td>
+                        <td><code>anterior</code></td>
+                        <td>Índice del contorno anterior del mismo nivel.</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td><code>primer_hijo</code></td>
+                        <td>Índice del primer contorno que está dentro de este.</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td><code>padre</code></td>
+                        <td>Índice del contorno que lo contiene.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>
+                Cuando una relación no existe, OpenCV utiliza <code>-1</code>.
+                Los índices hacen referencia a las posiciones de los contornos
+                dentro de la variable <code>contornos</code>.
+            </p>
+
+            <h3>4. Interpretar un vector de jerarquía</h3>
+
+            <p>
+                Supongamos que OpenCV devuelve esta jerarquía:
+            </p>
+
+            <pre><code>[[[-1, -1,  1, -1],
+  [-1, -1,  2,  0],
+  [-1, -1, -1,  1]]]</code></pre>
+
+            <p>La estructura se interpreta de la siguiente manera:</p>
+
+            <h4>Contorno 0: <code>[-1, -1, 1, -1]</code></h4>
+
+            <ul>
+                <li>No tiene un contorno siguiente.</li>
+                <li>No tiene un contorno anterior.</li>
+                <li>Su primer hijo es el contorno 1.</li>
+                <li>No tiene padre: es un contorno exterior.</li>
+            </ul>
+
+            <h4>Contorno 1: <code>[-1, -1, 2, 0]</code></h4>
+
+            <ul>
+                <li>No tiene un contorno siguiente.</li>
+                <li>No tiene un contorno anterior.</li>
+                <li>Su primer hijo es el contorno 2.</li>
+                <li>Su padre es el contorno 0.</li>
+            </ul>
+
+            <h4>Contorno 2: <code>[-1, -1, -1, 1]</code></h4>
+
+            <ul>
+                <li>No tiene un contorno siguiente.</li>
+                <li>No tiene un contorno anterior.</li>
+                <li>No tiene hijos.</li>
+                <li>Su padre es el contorno 1.</li>
+            </ul>
+
+            <p>
+                En este ejemplo, los valores son coherentes con tres contornos
+                anidados, sin otros contornos al mismo nivel. Los valores exactos
+                dependen de la imagen analizada y del método de recuperación
+                seleccionado.
+            </p>
+
+            <h3>5. ¿Cómo elegir el método de recuperación?</h3>
+
+            <ul>
+                <li>
+                    <code>cv2.RETR_EXTERNAL</code>: recupera únicamente los
+                    contornos exteriores.
+                </li>
+                <li>
+                    <code>cv2.RETR_LIST</code>: recupera todos los contornos sin
+                    establecer relaciones jerárquicas entre ellos.
+                </li>
+                <li>
+                    <code>cv2.RETR_TREE</code>: recupera todos los contornos y
+                    reconstruye toda la jerarquía.
+                </li>
+                <li>
+                    <code>cv2.RETR_CCOMP</code>: organiza los contornos en dos
+                    niveles jerárquicos.
+                </li>
+            </ul>
+
+            <h3>6. Ejercicio práctico</h3>
+
+            <p>
+                Utiliza una máscara binaria con varios rectángulos anidados y
+                ejecuta el siguiente código para consultar la jerarquía:
+            </p>
+
+            <pre><code>contornos, jerarquia = cv2.findContours(
+    mascara,
+    cv2.RETR_TREE,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+print("Cantidad de contornos:", len(contornos))
+print("Jerarquía:", jerarquia)
+
+for i, contorno in enumerate(contornos):
+    print("Contorno:", i)
+    print("Área:", cv2.contourArea(contorno))
+    print("Jerarquía:", jerarquia[0][i])</code></pre>
+
+            <p>
+                <strong>Preguntas:</strong>
+            </p>
+
+            <ol>
+                <li>¿Cuántos contornos detectó OpenCV?</li>
+                <li>¿Qué significa que un contorno tenga padre igual a -1?</li>
+                <li>¿Qué indica el valor de primer hijo?</li>
+                <li>¿Qué diferencia observarías al utilizar <code>cv2.RETR_EXTERNAL</code>?</li>
+            </ol>
+
+            <p>
+                <strong>Conclusión:</strong> los contornos permiten delimitar
+                objetos y la jerarquía permite conocer cómo están relacionados.
+                Si únicamente necesitas medir objetos exteriores, puedes comenzar
+                con <code>cv2.RETR_EXTERNAL</code>. Si necesitas analizar
+                contornos interiores o agujeros, utiliza
+                <code>cv2.RETR_TREE</code>.
+            </p>
+        </section>
+        <!-- CONTOURAREA -->
+
+        <section id="contourarea">
+            <span class="etiqueta">MÉTODO 2</span>
+            <h2>3. contourArea()</h2>
+
+            <p>
+                El método <code>cv2.contourArea()</code> calcula el área
+                geométrica encerrada por un contorno.
+            </p>
+
+            <h3>Sintaxis</h3>
+
+            <pre><code>area = cv2.contourArea(contorno)</code></pre>
+
+            <h3>Representación vectorial del área</h3>
+
+            <svg class="ilustracion" viewBox="0 0 600 300" role="img"
+                aria-label="Área de un rectángulo de 80 por 50 píxeles">
+                <defs>
+                    <pattern id="cuadriculaArea" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#64748b" stroke-width="0.6" />
+                    </pattern>
+                </defs>
+
+                <rect width="600" height="300" fill="#111827" />
+                <rect x="70" y="35" width="460" height="225" fill="url(#cuadriculaArea)" />
+
+                <rect x="150" y="75" width="300" height="150" fill="#10b981" fill-opacity="0.25" stroke="#10b981"
+                    stroke-width="3" />
+
+                <text x="300" y="142" text-anchor="middle" fill="#ffffff" font-size="22" font-weight="bold">
+                    Área
+                </text>
+
+                <text x="300" y="170" text-anchor="middle" fill="#a7f3d0" font-size="18">
+                    80 × 50 = 4000
+                </text>
+
+                <path d="M 150 55 L 450 55" stroke="#fbbf24" stroke-width="2" />
+
+                <path d="M 150 49 L 150 61 M 450 49 L 450 61" stroke="#fbbf24" stroke-width="2" />
+
+                <text x="300" y="45" text-anchor="middle" fill="#fbbf24" font-size="13">
+                    80 píxeles
+                </text>
+
+                <path d="M 470 75 L 470 225" stroke="#fbbf24" stroke-width="2" />
+
+                <path d="M 464 75 L 476 75 M 464 225 L 476 225" stroke="#fbbf24" stroke-width="2" />
+
+                <text x="490" y="150" fill="#fbbf24" font-size="13" transform="rotate(90 490 150)" text-anchor="middle">
+                    50 píxeles
+                </text>
+            </svg>
+
+            <h3>¿Cómo se calcula el área?</h3>
+
+            <p>
+                Para un rectángulo, el área geométrica se calcula
+                multiplicando el ancho por el alto:
+            </p>
+
+            <pre><code>area = ancho * alto
+
+# Ejemplo:
+area = 80 * 50
+
+print(area)
+# 4000</code></pre>
+
+            <p>
+                OpenCV obtiene el área utilizando los puntos del
+                contorno, por lo que no necesita que la figura
+                sea necesariamente un rectángulo.
+            </p>
+
+            <h3>Ejemplo con varios contornos</h3>
+
+            <pre><code>for contorno in contornos:
+
+    area = cv2.contourArea(contorno)
+
+    print("Área del objeto:", area)
+
+    if area > 500:
+        print("Objeto suficientemente grande")</code></pre>
+
+            <h3>Aplicaciones</h3>
+
+            <div class="rejilla">
+
+                <div class="tarjeta">
+                    <h3>Filtrar ruido</h3>
+                    <p>
+                        Ignorar contornos pequeños que pueden corresponder
+                        a puntos o imperfecciones.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Comparar objetos</h3>
+                    <p>
+                        Comparar las áreas para identificar cuál es
+                        el objeto más grande.
+                    </p>
+                </div>
+
+                <div class="tarjeta">
+                    <h3>Inspección visual</h3>
+                    <p>
+                        Comprobar si una pieza tiene un tamaño
+                        aproximado al esperado.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="nota">
+                <strong>Importante:</strong>
+                el área de un contorno se expresa en píxeles cuadrados
+                cuando las coordenadas de la imagen están en píxeles.
+                No representa directamente centímetros cuadrados ni
+                el número exacto de píxeles blancos.
+            </div>
+        </section>
+
+
+        <!-- BOUNDINGRECT -->
+
+        <section id="boundingrect">
+            <span class="etiqueta">MÉTODO 3</span>
+            <h2>4. boundingRect()</h2>
+
+            <p>
+                El método <code>cv2.boundingRect()</code> calcula
+                el rectángulo alineado con los ejes de la imagen
+                que contiene todos los puntos de un contorno.
+            </p>
+
+            <h3>Sintaxis</h3>
+
+            <pre><code>x, y, ancho, alto = cv2.boundingRect(contorno)</code></pre>
+
+            <h3>Representación vectorial</h3>
+
+            <svg class="ilustracion" viewBox="0 0 600 330" role="img"
+                aria-label="Contorno irregular dentro de un rectángulo delimitador">
+                <defs>
+                    <pattern id="cuadriculaRect" width="20" height="20" patternUnits="userSpaceOnUse">
+                        <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#64748b" stroke-width="0.6" />
+                    </pattern>
+                </defs>
+
+                <rect width="600" height="330" fill="#111827" />
+                <rect x="30" y="20" width="540" height="270" fill="url(#cuadriculaRect)" />
+
+                <rect x="115" y="55" width="360" height="190" fill="#2563eb" fill-opacity="0.08" stroke="#60a5fa"
+                    stroke-width="3" stroke-dasharray="9 6" />
+
+                <path d="M 160 115
+                     L 260 70
+                     L 410 105
+                     L 445 190
+                     L 325 225
+                     L 190 195 Z" fill="#10b981" fill-opacity="0.30" stroke="#10b981" stroke-width="4"
+                    stroke-linejoin="round" />
+
+                <circle cx="160" cy="115" r="5" fill="#fbbf24" />
+                <circle cx="260" cy="70" r="5" fill="#fbbf24" />
+                <circle cx="410" cy="105" r="5" fill="#fbbf24" />
+                <circle cx="445" cy="190" r="5" fill="#fbbf24" />
+                <circle cx="325" cy="225" r="5" fill="#fbbf24" />
+                <circle cx="190" cy="195" r="5" fill="#fbbf24" />
+
+                <text x="295" y="37" text-anchor="middle" fill="#93c5fd" font-size="15">
+                    Caja delimitadora
+                </text>
+
+                <text x="295" y="145" text-anchor="middle" fill="#ffffff" font-size="18" font-weight="bold">
+                    Objeto
+                </text>
+
+                <text x="295" y="310" text-anchor="middle" fill="#cbd5e1" font-size="13">
+                    Verde: contorno del objeto
+                    | Azul: rectángulo delimitador
+                </text>
+            </svg>
+
+            <h3>Significado de los valores</h3>
+
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Variable</th>
+                            <th>Significado</th>
+                            <th>Ejemplo</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td><code>x</code></td>
+                            <td>Coordenada horizontal izquierda.</td>
+                            <td>100</td>
+                        </tr>
+
+                        <tr>
+                            <td><code>y</code></td>
+                            <td>Coordenada vertical superior.</td>
+                            <td>50</td>
+                        </tr>
+
+                        <tr>
+                            <td><code>ancho</code></td>
+                            <td>Ancho de la caja en píxeles.</td>
+                            <td>120</td>
+                        </tr>
+
+                        <tr>
+                            <td><code>alto</code></td>
+                            <td>Alto de la caja en píxeles.</td>
+                            <td>80</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Dibujar el rectángulo</h3>
+
+            <pre><code>x, y, ancho, alto = cv2.boundingRect(contorno)
+
+cv2.rectangle(
+    imagen,
+    (x, y),
+    (x + ancho, y + alto),
+    (0, 255, 0),
+    2
+)</code></pre>
+
+            <p>
+                La función <code>cv2.rectangle()</code> dibuja una caja
+                verde alrededor del objeto. El valor <code>2</code>
+                indica el grosor de la línea.
+            </p>
+
+            <h3>Recortar el objeto</h3>
+
+            <pre><code>recorte = imagen[
+    y:y + alto,
+    x:x + ancho
+]
+
+cv2.imshow("Objeto recortado", recorte)</code></pre>
+
+            <div class="nota">
+                <strong>Ten en cuenta:</strong>
+                si el objeto tiene una forma irregular, el recorte
+                rectangular puede incluir parte del fondo.
+                Además, <code>boundingRect()</code> no calcula el
+                rectángulo rotado de menor área; para ello existe
+                <code>cv2.minAreaRect()</code>.
+            </div>
+        </section>
+
+
+        <!-- EJEMPLO COMPLETO -->
+
+        <section id="ejemplo">
+            <span class="etiqueta">EJEMPLO PRÁCTICO</span>
+            <h2>5. Utilizar los tres métodos juntos</h2>
+
+            <p>
+                El siguiente programa crea una imagen con un rectángulo
+                y un círculo blancos. Después detecta los contornos,
+                calcula sus áreas y dibuja las cajas delimitadoras.
+            </p>
+
+            <pre><code>import cv2
+import numpy as np
+
+# Crear una imagen negra
+imagen = np.zeros((400, 600), dtype=np.uint8)
+
+# Crear dos objetos blancos
+cv2.rectangle(
+    imagen,
+    (50, 50),
+    (200, 180),
+    255,
+    -1
+)
+
+cv2.circle(
+    imagen,
+    (350, 120),
+    60,
+    255,
+    -1
+)
+
+# Detectar los contornos
+contornos, jerarquia = cv2.findContours(
+    imagen,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+# Convertir a color para dibujar
+resultado = cv2.cvtColor(
+    imagen,
+    cv2.COLOR_GRAY2BGR
+)
+
+# Analizar cada objeto
+for contorno in contornos:
+
+    # Calcular el área
+    area = cv2.contourArea(contorno)
+
+    # Obtener la caja delimitadora
+    x, y, ancho, alto = cv2.boundingRect(contorno)
+
+    # Dibujar la caja
+    cv2.rectangle(
+        resultado,
+        (x, y),
+        (x + ancho, y + alto),
+        (0, 255, 0),
+        2
+    )
+
+    # Escribir el área
+    cv2.putText(
+        resultado,
+        f"Area: {area:.0f}",
+        (x, y - 10),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (0, 0, 255),
+        2
+    )
+
+    print("Área:", area)
+    print("Posición:", x, y)
+    print("Ancho:", ancho)
+    print("Alto:", alto)
+    print("----------------")
+
+# Mostrar todos los objetos
+cv2.imshow("Objetos detectados", resultado)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+
+            <div class="exito">
+                <strong>¿Qué aprenderás con este ejemplo?</strong>
+                <ul>
+                    <li>Detectar dos objetos independientes.</li>
+                    <li>Obtener el área geométrica de cada figura.</li>
+                    <li>Encontrar la posición de cada objeto.</li>
+                    <li>Representar visualmente los resultados.</li>
+                </ul>
+            </div>
+        </section>
+
+
+        <section id="seccion-7">
+            <h2>7. Umbralización de imágenes con cv2.threshold()</h2>
+
+            <p>
+                La función <code>cv2.threshold()</code> permite transformar una
+                imagen en función de un umbral. Compara el valor de cada píxel
+                con un límite establecido y asigna un nuevo valor según el tipo
+                de umbral seleccionado.
+            </p>
+
+            <p>
+                Una de sus aplicaciones más comunes es convertir una imagen en
+                escala de grises en una imagen binaria, donde los píxeles son
+                negros (0) o blancos (255). Esto facilita la detección de
+                contornos mediante <code>cv2.findContours()</code>.
+            </p>
+
+            <h3>7.1. Sintaxis de la función</h3>
+
+            <pre><code>umbral, imagen_binaria = cv2.threshold(
+    imagen_gris,
+    127,
+    255,
+    cv2.THRESH_BINARY
+)</code></pre>
+
+            <p>La función recibe los siguientes parámetros:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parámetro</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>imagen_gris</code></td>
+                        <td>Imagen de entrada que se desea transformar.</td>
+                    </tr>
+                    <tr>
+                        <td><code>127</code></td>
+                        <td>Umbral utilizado para comparar los píxeles.</td>
+                    </tr>
+                    <tr>
+                        <td><code>255</code></td>
+                        <td>Valor máximo que se asignará en este tipo de umbral.</td>
+                    </tr>
+                    <tr>
+                        <td><code>cv2.THRESH_BINARY</code></td>
+                        <td>Tipo de umbralización que se aplicará.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>
+                La función devuelve dos valores:
+            </p>
+
+            <ul>
+                <li>
+                    <strong><code>umbral</code>:</strong> valor del umbral
+                    utilizado. En este ejemplo será 127.
+                </li>
+                <li>
+                    <strong><code>imagen_binaria</code>:</strong> imagen resultante
+                    después de transformar los píxeles.
+                </li>
+            </ul>
+
+            <h3>7.2. ¿Cómo funciona internamente?</h3>
+
+            <p>
+                Cuando se utiliza <code>cv2.THRESH_BINARY</code>, OpenCV evalúa
+                individualmente cada píxel de la imagen.
+            </p>
+
+            <p>La regla aplicada es la siguiente:</p>
+
+            <pre><code>Si el píxel es mayor que el umbral:
+    El píxel se convierte en 255 (blanco).
+Si el píxel es menor o igual al umbral:
+    El píxel se convierte en 0 (negro).</code></pre>
+
+            <p>
+                Matemáticamente, para un píxel de entrada con valor
+                <code>src(x, y)</code>, un umbral <code>T</code> y un valor
+                máximo <code>255</code>:
+            </p>
+
+            <pre><code>dst(x, y) = 255, si src(x, y) &gt; T
+dst(x, y) = 0,   si src(x, y) &lt;= T</code></pre>
+
+            <p>
+                Por ejemplo, con un umbral de 127, los valores 180 y 220 se
+                convierten en 255, mientras que los valores 50 y 127 se
+                convierten en 0.
+            </p>
+
+            <h3>7.3. Ejemplo visual de la umbralización</h3>
+
+            <p>
+                La siguiente ilustración representa una matriz de píxeles antes
+                y después de aplicar un umbral de 127.
+            </p>
+
+            <svg viewBox="0 0 340 190" width="100%" role="img"
+                aria-label="Comparación de una matriz de intensidades con su resultado binario usando un umbral de 127."
+                xmlns="http://www.w3.org/2000/svg">
+
+                <text x="85" y="18" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">
+                    Imagen original
+                </text>
+
+                <text x="255" y="18" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">
+                    Imagen binaria
+                </text>
+
+                <g font-size="12" text-anchor="middle">
+                    <rect x="20" y="30" width="42" height="35" fill="#e2e8f0" stroke="#94a3b8" />
+                    <rect x="62" y="30" width="42" height="35" fill="#cbd5e1" stroke="#94a3b8" />
+                    <rect x="104" y="30" width="42" height="35" fill="#64748b" stroke="#94a3b8" />
+
+                    <rect x="20" y="65" width="42" height="35" fill="#94a3b8" stroke="#94a3b8" />
+                    <rect x="62" y="65" width="42" height="35" fill="#64748b" stroke="#94a3b8" />
+                    <rect x="104" y="65" width="42" height="35" fill="#334155" stroke="#94a3b8" />
+
+                    <rect x="20" y="100" width="42" height="35" fill="#cbd5e1" stroke="#94a3b8" />
+                    <rect x="62" y="100" width="42" height="35" fill="#475569" stroke="#94a3b8" />
+                    <rect x="104" y="100" width="42" height="35" fill="#0f172a" stroke="#94a3b8" />
+
+                    <g fill="#1e293b">
+                        <text x="41" y="52">50</text>
+                        <text x="83" y="52">120</text>
+                        <text x="125" y="52" fill="#ffffff">180</text>
+                        <text x="41" y="87">90</text>
+                        <text x="83" y="87" fill="#ffffff">127</text>
+                        <text x="125" y="87" fill="#ffffff">220</text>
+                        <text x="41" y="122">30</text>
+                        <text x="83" y="122" fill="#ffffff">150</text>
+                        <text x="125" y="122" fill="#ffffff">255</text>
+                    </g>
+
+                    <g stroke="#94a3b8">
+                        <rect x="190" y="30" width="42" height="35" fill="#000000" />
+                        <rect x="232" y="30" width="42" height="35" fill="#000000" />
+                        <rect x="274" y="30" width="42" height="35" fill="#ffffff" />
+
+                        <rect x="190" y="65" width="42" height="35" fill="#000000" />
+                        <rect x="232" y="65" width="42" height="35" fill="#000000" />
+                        <rect x="274" y="65" width="42" height="35" fill="#ffffff" />
+
+                        <rect x="190" y="100" width="42" height="35" fill="#000000" />
+                        <rect x="232" y="100" width="42" height="35" fill="#ffffff" />
+                        <rect x="274" y="100" width="42" height="35" fill="#ffffff" />
+                    </g>
+                </g>
+
+                <text x="85" y="157" text-anchor="middle" font-size="11" fill="currentColor">
+                    Intensidades de 0 a 255
+                </text>
+
+                <text x="255" y="157" text-anchor="middle" font-size="11" fill="currentColor">
+                    Solo valores 0 y 255
+                </text>
+
+                <text x="170" y="181" text-anchor="middle" font-size="11" fill="currentColor">
+                    Umbral utilizado: 127
+                </text>
+            </svg>
+
+            <p>
+                En la imagen resultante, los valores originales mayores que 127
+                aparecen en blanco. Los valores menores o iguales a 127 aparecen
+                en negro.
+            </p>
+
+            <h3>7.4. Tipos de umbralización</h3>
+
+            <p>
+                OpenCV dispone de diferentes tipos de umbralización. El parámetro
+                final de <code>cv2.threshold()</code> determina la operación
+                aplicada a cada píxel.
+            </p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tipo</th>
+                        <th>Funcionamiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>cv2.THRESH_BINARY</code></td>
+                        <td>Los valores mayores que el umbral se convierten en el valor máximo; los demás, en cero.</td>
+                    </tr>
+                    <tr>
+                        <td><code>cv2.THRESH_BINARY_INV</code></td>
+                        <td>Invierte el resultado de la umbralización binaria.</td>
+                    </tr>
+                    <tr>
+                        <td><code>cv2.THRESH_TRUNC</code></td>
+                        <td>Los valores mayores que el umbral se limitan al valor del umbral; los demás se mantienen.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><code>cv2.THRESH_TOZERO</code></td>
+                        <td>Los valores menores o iguales al umbral se convierten en cero; los demás se mantienen.</td>
+                    </tr>
+                    <tr>
+                        <td><code>cv2.THRESH_TOZERO_INV</code></td>
+                        <td>Los valores mayores que el umbral se convierten en cero; los demás se mantienen.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>7.5. Ejemplo práctico con una imagen</h3>
+
+            <p>
+                En el siguiente ejemplo se carga una imagen, se convierte a
+                escala de grises y se aplica un umbral para obtener una máscara
+                binaria.
+            </p>
+
+            <pre><code>import cv2
+
+# Cargar la imagen
+imagen = cv2.imread("objetos.png")
+
+# Convertir la imagen a escala de grises
+gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+
+# Aplicar el umbral
+umbral, mascara = cv2.threshold(
+    gris,
+    127,
+    255,
+    cv2.THRESH_BINARY
+)
+
+# Mostrar los resultados
+cv2.imshow("Imagen original", imagen)
+cv2.imshow("Escala de grises", gris)
+cv2.imshow("Mascara binaria", mascara)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+
+            <p>
+                <strong>Importante:</strong> este ejemplo supone que el archivo
+                <code>objetos.png</code> existe y se puede cargar correctamente.
+                Si la imagen no se encuentra, <code>cv2.imread()</code> devuelve
+                <code>None</code>, por lo que debe comprobarse antes de utilizar
+                <code>cv2.cvtColor()</code>.
+            </p>
+
+            <h3>7.6. Relación con la detección de contornos</h3>
+
+            <p>
+                La umbralización es una etapa habitual antes de utilizar
+                <code>cv2.findContours()</code>. Primero se obtiene una máscara
+                binaria y después se buscan los límites de las regiones blancas.
+            </p>
+
+            <pre><code># Convertir a escala de grises
+gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+
+# Crear la máscara binaria
+_, mascara = cv2.threshold(
+    gris,
+    127,
+    255,
+    cv2.THRESH_BINARY
+)
+
+# Detectar los contornos exteriores
+contornos, jerarquia = cv2.findContours(
+    mascara,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+# Dibujar los contornos
+resultado = imagen.copy()
+
+cv2.drawContours(
+    resultado,
+    contornos,
+    -1,
+    (0, 255, 0),
+    2
+)
+
+cv2.imshow("Contornos detectados", resultado)
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+
+            <p>
+                En este proceso, <code>cv2.threshold()</code> separa los píxeles
+                según su intensidad, mientras que <code>cv2.findContours()</code>
+                utiliza la máscara resultante para localizar los contornos.
+            </p>
+
+            <p>
+                Si ya se dispone de una máscara binaria creada con
+                <code>cv2.inRange()</code>, normalmente no es necesario aplicar
+                <code>cv2.threshold()</code> otra vez, porque
+                <code>cv2.inRange()</code> ya devuelve una máscara de un canal
+                con valores 0 y 255.
+            </p>
+
+            <h3>7.7. Ejercicio de práctica</h3>
+
+            <ol>
+                <li>Utiliza una imagen que contenga objetos claros sobre un fondo oscuro.</li>
+                <li>Convierte la imagen a escala de grises.</li>
+                <li>Aplica <code>cv2.threshold()</code> con un umbral de 127.</li>
+                <li>Cambia el umbral a 80 y después a 180.</li>
+                <li>Compara cómo cambia la máscara binaria en cada caso.</li>
+                <li>Utiliza <code>cv2.findContours()</code> para detectar las regiones blancas de la máscara.</li>
+            </ol>
+
+            <h3>Conclusión</h3>
+
+            <p>
+                <code>cv2.threshold()</code> permite clasificar los píxeles
+                mediante un límite de intensidad. El umbral seleccionado influye
+                directamente en las regiones que quedan en blanco o negro.
+                Una máscara adecuada facilita la detección y el análisis de
+                contornos mediante OpenCV.
+            </p>
+        </section>
+
+        <section id="seccion-8">
+            <h2>8. Dibujar contornos con cv2.drawContours()</h2>
+
+            <p>
+                La función <code>cv2.drawContours()</code> permite dibujar los
+                contornos detectados en una imagen. Se utiliza para visualizar
+                los límites de los objetos identificados mediante
+                <code>cv2.findContours()</code>.
+            </p>
+
+            <p>
+                Por ejemplo, después de detectar los contornos de una máscara
+                binaria, podemos dibujarlos sobre la imagen original para
+                observar dónde se encuentran los objetos detectados.
+            </p>
+
+            <h3>8.1. Sintaxis de la función</h3>
+
+            <pre><code>cv2.drawContours(
+    imagen,
+    contornos,
+    -1,
+    (0, 255, 0),
+    2
+)</code></pre>
+
+            <p>La función recibe los siguientes parámetros:</p>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parámetro</th>
+                        <th>Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>imagen</code></td>
+                        <td>Imagen sobre la que se dibujarán los contornos.</td>
+                    </tr>
+                    <tr>
+                        <td><code>contornos</code></td>
+                        <td>Lista de contornos obtenida con <code>cv2.findContours()</code>.</td>
+                    </tr>
+                    <tr>
+                        <td><code>-1</code></td>
+                        <td>Indica que se dibujarán todos los contornos.</td>
+                    </tr>
+                    <tr>
+                        <td><code>(0, 255, 0)</code></td>
+                        <td>Color del contorno en formato BGR. En este caso, verde.</td>
+                    </tr>
+                    <tr>
+                        <td><code>2</code></td>
+                        <td>Grosor de la línea en píxeles.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>8.2. ¿Cómo se visualizan los contornos?</h3>
+
+            <p>
+                Imagina que una imagen contiene varios objetos. Después de
+                utilizar <code>cv2.findContours()</code>, OpenCV dispone de las
+                coordenadas de sus límites, pero todavía no los ha dibujado
+                sobre la imagen original.
+            </p>
+
+            <p>
+                La función <code>cv2.drawContours()</code> utiliza esas
+                coordenadas para representar visualmente los contornos.
+            </p>
+
+            <svg viewBox="0 0 340 165" width="100%" role="img"
+                aria-label="Dos objetos rectangulares con sus contornos resaltados en verde."
+                xmlns="http://www.w3.org/2000/svg">
+
+                <rect x="15" y="15" width="310" height="125" rx="4" fill="#e2e8f0" stroke="#94a3b8" />
+
+                <rect x="45" y="40" width="85" height="65" fill="#64748b" />
+                <rect x="45" y="40" width="85" height="65" fill="none" stroke="#16a34a" stroke-width="3" />
+
+                <circle cx="235" cy="72" r="36" fill="#64748b" />
+                <circle cx="235" cy="72" r="36" fill="none" stroke="#16a34a" stroke-width="3" />
+
+                <text x="170" y="158" text-anchor="middle" font-size="11" fill="currentColor">
+                    Los límites se resaltan en verde.
+                </text>
+            </svg>
+
+            <h3>8.3. Ejemplo completo</h3>
+
+            <p>
+                En el siguiente programa se carga una imagen, se convierte a
+                escala de grises, se genera una máscara binaria, se detectan los
+                contornos y finalmente se dibujan sobre una copia de la imagen
+                original.
+            </p>
+
+            <pre><code>import cv2
+
+# Cargar la imagen
+imagen = cv2.imread("objetos.png")
+
+# Verificar que la imagen se haya cargado
+if imagen is not None:
+
+    # Convertir a escala de grises
+    gris = cv2.cvtColor(
+        imagen,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    # Crear una máscara binaria
+    _, mascara = cv2.threshold(
+        gris,
+        127,
+        255,
+        cv2.THRESH_BINARY
+    )
+
+    # Detectar los contornos
+    contornos, jerarquia = cv2.findContours(
+        mascara,
+        cv2.RETR_EXTERNAL,
+        cv2.CHAIN_APPROX_SIMPLE
+    )
+
+    # Crear una copia para dibujar
+    resultado = imagen.copy()
+
+    # Dibujar todos los contornos en verde
+    cv2.drawContours(
+        resultado,
+        contornos,
+        -1,
+        (0, 255, 0),
+        2
+    )
+
+    # Mostrar los resultados
+    cv2.imshow("Imagen original", imagen)
+    cv2.imshow("Mascara", mascara)
+    cv2.imshow("Contornos", resultado)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+else:
+    print("No se pudo cargar la imagen.")</code></pre>
+
+            <h3>8.4. Dibujar un contorno específico</h3>
+
+            <p>
+                El tercer parámetro permite seleccionar qué contorno dibujar.
+                Los contornos se identifican mediante índices que comienzan en 0.
+            </p>
+
+            <pre><code># Dibujar solamente el primer contorno
+cv2.drawContours(
+    resultado,
+    contornos,
+    0,
+    (255, 0, 0),
+    2
+)</code></pre>
+
+            <p>
+                En este ejemplo, el contorno seleccionado se dibuja en azul,
+                porque OpenCV utiliza el orden de colores BGR:
+            </p>
+
+            <ul>
+                <li><code>(255, 0, 0)</code>: azul.</li>
+                <li><code>(0, 255, 0)</code>: verde.</li>
+                <li><code>(0, 0, 255)</code>: rojo.</li>
+                <li><code>(255, 255, 255)</code>: blanco.</li>
+                <li><code>(0, 0, 0)</code>: negro.</li>
+            </ul>
+
+            <p>
+                Si no existen contornos, no hay ningún índice válido que
+                seleccionar. Por eso es recomendable comprobar primero
+                <code>len(contornos)</code>.
+            </p>
+
+            <h3>8.5. Dibujar los contornos con diferentes grosores</h3>
+
+            <p>
+                El último parámetro permite cambiar el grosor de las líneas.
+                También se puede utilizar un valor negativo para rellenar los
+                contornos, en lugar de dibujar únicamente su borde.
+            </p>
+
+            <pre><code># Contorno con línea delgada
+cv2.drawContours(
+    resultado, contornos, -1, (0, 255, 0), 1
+)
+
+# Contorno con línea gruesa
+cv2.drawContours(
+    resultado, contornos, -1, (0, 255, 0), 4
+)
+
+# Rellenar las regiones delimitadas por los contornos
+cv2.drawContours(
+    resultado, contornos, -1, (0, 255, 0), -1
+)</code></pre>
+
+            <p>
+                <strong>Importante:</strong> si deseas comparar diferentes
+                grosores o estilos, utiliza copias independientes de la imagen
+                para que los dibujos anteriores no se mezclen con los nuevos.
+            </p>
+
+            <h3>8.6. ¿Qué diferencia hay entre findContours() y drawContours()?</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Función</th>
+                        <th>Propósito</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><code>cv2.findContours()</code></td>
+                        <td>Busca los contornos y devuelve sus coordenadas.</td>
+                    </tr>
+                    <tr>
+                        <td><code>cv2.drawContours()</code></td>
+                        <td>Dibuja los contornos utilizando las coordenadas obtenidas.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <p>
+                En otras palabras, <code>findContours()</code> encuentra los
+                límites y <code>drawContours()</code> permite visualizarlos.
+                Ambas funciones se complementan en numerosos proyectos de
+                visión por computadora.
+            </p>
+
+            <h3>8.7. Ejercicio de práctica</h3>
+
+            <ol>
+                <li>Carga una imagen que contenga varios objetos.</li>
+                <li>Genera una máscara binaria mediante <code>cv2.threshold()</code>.</li>
+                <li>Detecta los contornos con <code>cv2.findContours()</code>.</li>
+                <li>Dibuja todos los contornos en verde con un grosor de 2.</li>
+                <li>Modifica el código para dibujar únicamente el contorno de índice 0.</li>
+                <li>Cambia el color a rojo y después prueba a rellenar los contornos.</li>
+            </ol>
+
+            <h3>Conclusión</h3>
+
+            <p>
+                <code>cv2.drawContours()</code> es una herramienta de visualización
+                que permite representar los límites encontrados en una imagen.
+                Es especialmente útil para comprobar si la máscara binaria y la
+                detección de contornos están funcionando como se espera.
+            </p>
+        </section>
+
+<section id="seccion-9">
+    <h2>9. Detección de esquinas con Harris</h2>
+
+    <p>
+        El detector de Harris es un algoritmo de visión por computadora
+        que permite identificar esquinas en una imagen. Fue desarrollado
+        por Chris Harris y Mike Stephens en 1988 y se utiliza para
+        localizar puntos de interés que pueden servir para analizar
+        movimientos, comparar imágenes o realizar seguimiento de objetos.
+    </p>
+
+    <p>
+        Una esquina es un punto donde la intensidad de la imagen cambia
+        significativamente en más de una dirección. Por ejemplo, las
+        esquinas de una ventana, los vértices de un tablero o las
+        intersecciones de líneas pueden funcionar como puntos de interés.
+    </p>
+
+    <h3>9.1. ¿Qué es una esquina para una computadora?</h3>
+
+    <p>
+        Para comprender cómo funciona Harris, debemos observar cómo
+        cambia la intensidad de los píxeles alrededor de un punto.
+        Generalmente, podemos encontrar tres situaciones:
+    </p>
+
+    <ul>
+        <li>
+            <strong>Región plana:</strong> los píxeles presentan cambios
+            pequeños en cualquier dirección.
+        </li>
+        <li>
+            <strong>Borde:</strong> la intensidad cambia principalmente
+            en una dirección.
+        </li>
+        <li>
+            <strong>Esquina:</strong> la intensidad cambia de forma
+            significativa en dos direcciones.
+        </li>
+    </ul>
+
+    <svg viewBox="0 0 340 150" width="100%"
+         role="img"
+         aria-label="Comparación de una región plana, un borde y una esquina."
+         xmlns="http://www.w3.org/2000/svg">
+
+        <g>
+            <rect x="8" y="12" width="96" height="95"
+                  fill="#d1d5db" stroke="#94a3b8"/>
+            <text x="56" y="130" font-size="12"
+                  text-anchor="middle" fill="currentColor">Región plana</text>
+
+            <rect x="122" y="12" width="96" height="95"
+                  fill="#e5e7eb" stroke="#94a3b8"/>
+            <rect x="170" y="12" width="48" height="95"
+                  fill="#374151"/>
+            <text x="170" y="130" font-size="12"
+                  text-anchor="middle" fill="currentColor">Borde</text>
+
+            <rect x="236" y="12" width="96" height="95"
+                  fill="#e5e7eb" stroke="#94a3b8"/>
+            <path d="M284 12 H332 V60 H284 Z"
+                  fill="#374151"/>
+            <circle cx="284" cy="60" r="5"
+                    fill="#16a34a" stroke="#ffffff" stroke-width="1.5"/>
+            <text x="284" y="130" font-size="12"
+                  text-anchor="middle" fill="currentColor">Esquina</text>
+        </g>
+    </svg>
+
+    <h3>9.2. ¿Cómo funciona el detector de Harris?</h3>
+
+    <p>
+        Harris analiza cómo cambia una pequeña ventana de la imagen
+        cuando se desplaza ligeramente en diferentes direcciones.
+        Si el desplazamiento produce cambios importantes en la intensidad
+        en dos direcciones, el punto puede corresponder a una esquina.
+    </p>
+
+    <p>
+        Internamente, utiliza las derivadas de intensidad de la imagen
+        para construir una matriz que resume los cambios locales.
+        A partir de esa matriz calcula una puntuación denominada
+        respuesta de Harris:
+    </p>
+
+    <pre><code>R = det(M) - k * (trace(M) ** 2)</code></pre>
+
+    <p>Donde:</p>
+
+    <ul>
+        <li>
+            <code>M</code> es la matriz que resume los cambios de
+            intensidad en una ventana local.
+        </li>
+        <li>
+            <code>det(M)</code> es el determinante de esa matriz.
+        </li>
+        <li>
+            <code>trace(M)</code> es la suma de sus elementos diagonales.
+        </li>
+        <li>
+            <code>k</code> es un parámetro empírico, normalmente cercano
+            a 0.04 o 0.06.
+        </li>
+    </ul>
+
+    <p>
+        La respuesta permite distinguir entre regiones planas, bordes
+        y posibles esquinas. Una respuesta positiva elevada suele indicar
+        una esquina fuerte.
+    </p>
+
+    <h3>9.3. Función cv2.cornerHarris()</h3>
+
+    <p>
+        OpenCV implementa el detector mediante
+        <code>cv2.cornerHarris()</code>.
+    </p>
+
+    <pre><code>respuesta = cv2.cornerHarris(
+    imagen_gris,
+    blockSize=2,
+    ksize=3,
+    k=0.04
+)</code></pre>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Parámetro</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>imagen_gris</code></td>
+                <td>Imagen de un solo canal y tipo de datos compatible, normalmente <code>float32</code>.</td>
+            </tr>
+            <tr>
+                <td><code>blockSize</code></td>
+                <td>Tamaño de la vecindad utilizada para calcular los cambios locales.</td>
+            </tr>
+            <tr>
+                <td><code>ksize</code></td>
+                <td>Tamaño del kernel utilizado para calcular las derivadas mediante Sobel.</td>
+            </tr>
+            <tr>
+                <td><code>k</code></td>
+                <td>Constante utilizada en la fórmula de Harris.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <p>
+        La función devuelve una matriz de respuestas. Los valores altos
+        permiten identificar las ubicaciones que tienen características
+        similares a las esquinas.
+    </p>
+
+    <h3>9.4. Ejemplo completo en Python</h3>
+
+    <pre><code>import cv2
+import numpy as np
+
+# Cargar la imagen
+imagen = cv2.imread("objetos.png")
+
+if imagen is not None:
+
+    # Convertir a escala de grises
+    gris = cv2.cvtColor(
+        imagen,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    # Convertir a float32
+    gris_float = np.float32(gris)
+
+    # Detectar esquinas con Harris
+    respuesta = cv2.cornerHarris(
+        gris_float,
+        blockSize=2,
+        ksize=3,
+        k=0.04
+    )
+
+    # Dilatar para hacer más visibles las respuestas
+    respuesta = cv2.dilate(
+        respuesta,
+        None
+    )
+
+    # Copiar la imagen original
+    resultado = imagen.copy()
+
+    # Marcar las respuestas suficientemente altas
+    resultado[respuesta > 0.01 * respuesta.max()] = [
+        0, 0, 255
+    ]
+
+    # Mostrar resultados
+    cv2.imshow("Imagen original", imagen)
+    cv2.imshow("Esquinas Harris", resultado)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+else:
+    print("No se pudo cargar la imagen.")</code></pre>
+
+    <p>
+        En este ejemplo, las esquinas detectadas se marcan en rojo.
+        El umbral de <code>0.01 * respuesta.max()</code> permite
+        seleccionar las respuestas que superan el 1 % de la respuesta
+        máxima de la imagen. Este valor es ajustable y puede necesitar
+        cambios según la imagen.
+    </p>
+
+    <h3>9.5. ¿Para qué sirve la dilatación?</h3>
+
+    <p>
+        La función <code>cv2.dilate()</code> amplía las regiones claras
+        de una matriz. En este ejemplo, se utiliza para que las respuestas
+        de Harris sean más visibles. No es la operación que detecta las
+        esquinas; esa tarea la realiza <code>cv2.cornerHarris()</code>.
+    </p>
+
+    <h3>9.6. Ejercicio de práctica</h3>
+
+    <ol>
+        <li>Utiliza una imagen de un edificio, una ventana o un tablero.</li>
+        <li>Ejecuta el detector de Harris con <code>blockSize=2</code>.</li>
+        <li>Prueba con <code>blockSize=5</code>.</li>
+        <li>Modifica el umbral de selección de esquinas.</li>
+        <li>Compara la cantidad y la ubicación de las esquinas resaltadas.</li>
+    </ol>
+
+    <p>
+        <strong>Conclusión:</strong> Harris detecta esquinas mediante
+        el análisis de cambios de intensidad en distintas direcciones.
+        Es útil para localizar puntos de interés, aunque su resultado
+        puede incluir respuestas cercanas o múltiples alrededor de una
+        misma esquina.
+    </p>
+</section>
+
+
+<section id="seccion-10">
+    <h2>10. Detección de esquinas con Shi-Tomasi</h2>
+
+    <p>
+        Shi-Tomasi es otro detector de esquinas utilizado en visión
+        por computadora. Fue propuesto por Jianbo Shi y Carlo Tomasi
+        en 1994 y se relaciona con el detector de Harris.
+    </p>
+
+    <p>
+        Ambos métodos buscan puntos donde la intensidad de la imagen
+        cambia en más de una dirección. Sin embargo, utilizan criterios
+        diferentes para determinar qué puntos son buenos candidatos
+        para ser esquinas.
+    </p>
+
+    <h3>10.1. ¿Cómo funciona Shi-Tomasi?</h3>
+
+    <p>
+        Al igual que Harris, Shi-Tomasi calcula una matriz que resume
+        los cambios de intensidad dentro de una ventana local. Esta
+        matriz tiene dos valores propios, denominados
+        <code>lambda1</code> y <code>lambda2</code>.
+    </p>
+
+    <p>
+        Shi-Tomasi utiliza el menor de esos dos valores para evaluar
+        la calidad del punto:
+    </p>
+
+    <pre><code>R = min(lambda1, lambda2)</code></pre>
+
+    <p>La interpretación es la siguiente:</p>
+
+    <ul>
+        <li>
+            <strong>Ambos valores pequeños:</strong> región plana,
+            con pocos cambios de intensidad.
+        </li>
+        <li>
+            <strong>Un valor grande y otro pequeño:</strong> posible
+            borde, porque el cambio es fuerte principalmente en una
+            dirección.
+        </li>
+        <li>
+            <strong>Ambos valores grandes:</strong> posible esquina,
+            porque los cambios son importantes en dos direcciones.
+        </li>
+    </ul>
+
+    <p>
+        El algoritmo considera buenos candidatos a los puntos cuyo
+        menor valor propio es suficientemente grande.
+    </p>
+
+    <h3>10.2. Función cv2.goodFeaturesToTrack()</h3>
+
+    <p>
+        OpenCV permite detectar esquinas mediante
+        <code>cv2.goodFeaturesToTrack()</code>. Esta función puede
+        utilizar el criterio de Shi-Tomasi de manera predeterminada.
+    </p>
+
+    <pre><code>esquinas = cv2.goodFeaturesToTrack(
+    imagen_gris,
+    maxCorners=100,
+    qualityLevel=0.01,
+    minDistance=10,
+    blockSize=3,
+    useHarrisDetector=False
+)</code></pre>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Parámetro</th>
+                <th>Descripción</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>imagen_gris</code></td>
+                <td>Imagen de entrada de un solo canal, normalmente de 8 bits.</td>
+            </tr>
+            <tr>
+                <td><code>maxCorners</code></td>
+                <td>Número máximo de esquinas que se desea obtener. Si es 0 o menor, no se establece ese límite.</td>
+            </tr>
+            <tr>
+                <td><code>qualityLevel</code></td>
+                <td>Umbral relativo de calidad. Por ejemplo, 0.01 permite considerar puntos con una calidad de al menos el 1 % del máximo.</td>
+            </tr>
+            <tr>
+                <td><code>minDistance</code></td>
+                <td>Distancia mínima aproximada entre las esquinas seleccionadas, en píxeles.</td>
+            </tr>
+            <tr>
+                <td><code>blockSize</code></td>
+                <td>Tamaño de la vecindad usada para evaluar cada punto.</td>
+            </tr>
+            <tr>
+                <td><code>useHarrisDetector</code></td>
+                <td>Si es <code>False</code>, utiliza el criterio de Shi-Tomasi; si es <code>True</code>, utiliza Harris.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>10.3. Ejemplo completo en Python</h3>
+
+    <pre><code>import cv2
+
+# Cargar la imagen
+imagen = cv2.imread("objetos.png")
+
+if imagen is not None:
+
+    # Convertir a escala de grises
+    gris = cv2.cvtColor(
+        imagen,
+        cv2.COLOR_BGR2GRAY
+    )
+
+    # Detectar esquinas con Shi-Tomasi
+    esquinas = cv2.goodFeaturesToTrack(
+        gris,
+        maxCorners=100,
+        qualityLevel=0.01,
+        minDistance=10,
+        blockSize=3,
+        useHarrisDetector=False
+    )
+
+    # Copiar la imagen original
+    resultado = imagen.copy()
+
+    # Dibujar las esquinas detectadas
+    if esquinas is not None:
+
+        esquinas = esquinas.astype(int)
+
+        for esquina in esquinas:
+            x, y = esquina.ravel()
+
+            cv2.circle(
+                resultado,
+                (x, y),
+                5,
+                (0, 0, 255),
+                -1
+            )
+
+        print("Esquinas detectadas:", len(esquinas))
+
+    else:
+        print("No se detectaron esquinas.")
+
+    # Mostrar los resultados
+    cv2.imshow("Imagen original", imagen)
+    cv2.imshow("Esquinas Shi-Tomasi", resultado)
+
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
+
+else:
+    print("No se pudo cargar la imagen.")</code></pre>
+
+    <p>
+        En este ejemplo, cada esquina detectada se representa mediante
+        un círculo rojo. La función devuelve las coordenadas de los
+        puntos seleccionados, no una imagen binaria de contornos.
+    </p>
+
+    <h3>10.4. ¿Por qué se llama goodFeaturesToTrack?</h3>
+
+    <p>
+        El nombre significa, aproximadamente, «buenas características
+        para seguir». Los puntos detectados pueden utilizarse para
+        realizar seguimiento entre fotogramas de un video mediante
+        algoritmos como <code>cv2.calcOpticalFlowPyrLK()</code>.
+    </p>
+
+    <p>
+        Para que el seguimiento funcione correctamente, las esquinas
+        deben ser suficientemente distintivas y mantenerse visibles
+        entre los fotogramas. Si un objeto desaparece, cambia mucho de
+        apariencia o queda oculto, el seguimiento puede fallar.
+    </p>
+
+    <h3>10.5. Comparación entre Harris y Shi-Tomasi</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Característica</th>
+                <th>Harris</th>
+                <th>Shi-Tomasi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Objetivo</td>
+                <td>Detectar esquinas.</td>
+                <td>Detectar esquinas de buena calidad.</td>
+            </tr>
+            <tr>
+                <td>Criterio</td>
+                <td><code>det(M) - k(trace(M))²</code></td>
+                <td><code>min(lambda1, lambda2)</code></td>
+            </tr>
+            <tr>
+                <td>Función habitual</td>
+                <td><code>cv2.cornerHarris()</code></td>
+                <td><code>cv2.goodFeaturesToTrack()</code></td>
+            </tr>
+            <tr>
+                <td>Resultado habitual</td>
+                <td>Matriz de respuestas.</td>
+                <td>Lista de coordenadas de esquinas seleccionadas.</td>
+            </tr>
+            <tr>
+                <td>Control de cantidad y separación</td>
+                <td>Se suele aplicar selección posterior.</td>
+                <td>Dispone de parámetros como <code>maxCorners</code> y <code>minDistance</code>.</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>10.6. Ejercicio de práctica</h3>
+
+    <ol>
+        <li>Selecciona una imagen que contenga esquinas bien definidas.</li>
+        <li>Detecta las esquinas con Shi-Tomasi usando <code>maxCorners=50</code>.</li>
+        <li>Cambia el valor a 150 y compara los resultados.</li>
+        <li>Modifica <code>minDistance</code> para controlar la separación entre los puntos.</li>
+        <li>Activa <code>useHarrisDetector=True</code> y compara el resultado con el criterio de Shi-Tomasi.</li>
+    </ol>
+
+    <p>
+        <strong>Conclusión:</strong> Shi-Tomasi permite seleccionar
+        puntos de interés que presentan cambios de intensidad
+        significativos en dos direcciones. Su función
+        <code>cv2.goodFeaturesToTrack()</code> facilita la selección de
+        esquinas y resulta especialmente útil para el seguimiento de
+        puntos en secuencias de imágenes.
+    </p>
+</section>
+
+        <!-- RESUMEN -->
+
+        <section id="resumen">
+            <h2>6. Resumen comparativo</h2>
+
+            <div class="tabla-contenedor">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Método</th>
+                            <th>Resultado</th>
+                            <th>Uso principal</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td><code>findContours()</code></td>
+                            <td>Contornos y jerarquía.</td>
+                            <td>Detectar los límites de los objetos.</td>
+                        </tr>
+
+                        <tr>
+                            <td><code>contourArea()</code></td>
+                            <td>Área geométrica.</td>
+                            <td>Medir y filtrar objetos.</td>
+                        </tr>
+
+                        <tr>
+                            <td><code>boundingRect()</code></td>
+                            <td>x, y, ancho y alto.</td>
+                            <td>Localizar y delimitar objetos.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3>Comprueba lo aprendido</h3>
+
+            <div class="tarjeta">
+                <p><strong>Pregunta 1.</strong>
+                    ¿Qué método permite encontrar los contornos?</p>
+
+                <label>
+                    <input type="radio" name="p1" value="a">
+                    cv2.contourArea()
+                </label>
+                <br>
+
+                <label>
+                    <input type="radio" name="p1" value="b">
+                    cv2.findContours()
+                </label>
+                <br>
+
+                <label>
+                    <input type="radio" name="p1" value="c">
+                    cv2.boundingRect()
+                </label>
+            </div>
+
+            <div class="tarjeta">
+                <p><strong>Pregunta 2.</strong>
+                    ¿Qué método calcula el área de un contorno?</p>
+
+                <label>
+                    <input type="radio" name="p2" value="a">
+                    cv2.boundingRect()
+                </label>
+                <br>
+
+                <label>
+                    <input type="radio" name="p2" value="b">
+                    cv2.findContours()
+                </label>
+                <br>
+
+                <label>
+                    <input type="radio" name="p2" value="c">
+                    cv2.contourArea()
+                </label>
+            </div>
+
+            <div class="tarjeta">
+                <p><strong>Pregunta 3.</strong>
+                    ¿Qué devuelve cv2.boundingRect()?</p>
+
+                <label>
+                    <input type="radio" name="p3" value="a">
+                    La posición, el ancho y el alto del rectángulo.
+                </label>
+                <br>
+
+                <label>
+                    <input type="radio" name="p3" value="b">
+                    Únicamente el área del objeto.
+                </label>
+                <br>
+
+                <label>
+                    <input type="radio" name="p3" value="c">
+                    Una imagen en escala de grises.
+                </label>
+            </div>
+
+            <button type="button" onclick="revisarRespuestas()">
+                Revisar respuestas
+            </button>
+
+            <div id="resultado" class="resultado" hidden></div>
+
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Visión por computadora con Python y OpenCV</p>
+        <p class="pie">
+            Guía educativa de análisis de contornos y geometría de objetos.
+        </p>
+    </footer>
+
+    <script>
+        function revisarRespuestas() {
+            const respuestas = {
+                p1: "b",
+                p2: "c",
+                p3: "a"
+            };
+
+            let correctas = 0;
+            let detalle = "";
+
+            for (const pregunta in respuestas) {
+                const seleccionada = document.querySelector(
+                    'input[name="' + pregunta + '"]:checked'
+                );
+
+                if (seleccionada && seleccionada.value === respuestas[pregunta]) {
+                    correctas++;
+                    detalle += pregunta.toUpperCase() + ": Correcto.\n";
+                } else {
+                    detalle += pregunta.toUpperCase() +
+                        ": Respuesta incorrecta o sin seleccionar.\n";
+                }
+            }
+
+            const resultado = document.getElementById("resultado");
+
+            resultado.hidden = false;
+            resultado.textContent =
+                "Puntuación: " + correctas + " de 3\n\n" + detalle;
+        }
+    </script>
+
+</body>
+
+</html>

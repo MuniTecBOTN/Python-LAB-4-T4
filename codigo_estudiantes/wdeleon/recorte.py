@@ -7,26 +7,28 @@ if imagen is None:
 
 print("Dimensiones", imagen.shape)
 
-recorte = imagen[150:750, 800:1300]
+Recorte = imagen[150:750, 800:1300]
 
 #Desempaquetando las dimensiones de la imagen
 alto, ancho, canales = imagen.shape
 
+RelacionAspecto = alto / ancho
+NuevoAncho = 150
+NuevoAlto = int(RelacionAspecto * NuevoAncho)
+print(f"Nuevas medidas: {NuevoAlto, NuevoAncho}")
+
 #Imagen reducida
-reduccion = cv2.resize(imagen,( ancho //2, alto//2), interpolation=cv2.INTER_CUBIC)
+Reduccion = cv2.resize(imagen,(NuevoAncho, NuevoAlto), interpolation=cv2.INTER_CUBIC)
 
 #Imagen rotada
-rotacion = cv2.rotate(reduccion, cv2.ROTATE_90_CLOCKWISE)
+Rotacion = cv2.rotate(Reduccion, cv2.ROTATE_90_CLOCKWISE)
+AltoReducido, AnchoReducid, _ = Reduccion.shape
+Centro = (AnchoReducid//2, AltoReducido//2)
+MatrizRotacion = cv2.getRotationMatrix2D(Centro, 90, 1)
+ImagenRotada = cv2.warpAffine(Reduccion, MatrizRotacion,(AnchoReducid, AltoReducido))
 
-AltoReducido, AnchoReducid, _ = reduccion.shape
-
-centro = (AnchoReducid//2, AltoReducido//2)
-
-MatrizRotacion = cv2.getRotationMatrix2D(centro, 90, 1)
-
-ImagenRotada = cv2.warpAffine(reduccion, MatrizRotacion,(AnchoReducid, AltoReducido))
-
-ImagenAnotada = reduccion.copy()
+#Anotacion de imagen
+ImagenAnotada = Reduccion.copy()
 cv2.rectangle(
     ImagenAnotada, 
     (400,100),
@@ -53,18 +55,19 @@ cv2.putText(
     2
 
 )
-
-ImgaenEscalaGris = cv2.cvtColor(ImagenAnotada, cv2.COLOR_BGR2YUV_Y422)
+#Escala de color de la imagen
+ImgaenEscalaGris = cv2.cvtColor(ImagenAnotada, cv2.COLOR_BGR2YUV)
 
 cv2.imwrite("imagen_anotada.jpg", ImagenAnotada)
 
+#Mostrador de Imagnes
 #cv2.imshow("Imagen Original", imagen)
-#cv2.imshow("Imagen Recortada", recorte)
-#cv2.imshow("Imagen Reducida", reduccion)
-#cv2.imshow("Imagen Rotada", rotacion)
+#cv2.imshow("Imagen Recortada", Recorte)
+cv2.imshow("Imagen Reducida", Reduccion)
+#cv2.imshow("Imagen Rotada", Rotacion)
 #cv2.imshow("Imagen Rotada 2", ImagenRotada)
-cv2.imshow("Imagen Anotada", ImagenAnotada)
-cv2.imshow("Imagen Filtro", ImgaenEscalaGris)
+#cv2.imshow("Imagen Anotada", ImagenAnotada)
+#cv2.imshow("Imagen Filtro", ImgaenEscalaGris)
 
 cv2.waitKey(0)
 cv2.destroyAllWindows()

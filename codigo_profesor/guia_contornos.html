@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía OpenCV: findContours, contourArea y boundingRect</title>
+<style>
+:root{--bg:#f3f6fb;--paper:#fff;--ink:#202b3c;--muted:#5e6a7b;--blue:#174ea6;--line:#d9e1ec;--code:#111827}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+header{background:linear-gradient(130deg,#10284f,#1e60c9);color:#fff;padding:48px 5%}header>div,main{max-width:1050px;margin:auto}h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.15;margin:0 0 14px}header p{max-width:800px;color:#e5edff}
+main{width:92%;padding:25px 0 50px}nav,section,.note{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:24px;margin:18px 0;box-shadow:0 3px 12px #152c4a0a}
+h2{color:#173b77;margin-top:0;font-size:1.7rem;line-height:1.3}h3{color:#28466e;margin-top:1.5rem}a{color:var(--blue)}nav ol{columns:2;padding-left:25px}
+code{font-family:Consolas,"Courier New",monospace;background:#edf1f7;padding:2px 4px;border-radius:4px;font-size:.94em}
+pre{overflow-x:auto;background:var(--code);color:#eef4ff;padding:18px;border-radius:10px;line-height:1.55;font-size:.92rem}pre code{background:transparent;color:inherit;padding:0}
+table{border-collapse:collapse;width:100%;margin:16px 0}td,th{border:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{background:#edf2fa}
+.note{box-shadow:none;border-left:5px solid var(--blue);background:#eaf1ff}.warn{border-left-color:#d97706;background:#fff6e8}.good{border-left-color:#16803c;background:#edfbf1}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.steps div{border:1px solid var(--line);border-radius:10px;padding:15px;background:#fafcff}.steps strong{display:block;color:var(--blue)}
+details{padding:13px 15px;border:1px solid var(--line);border-radius:9px;margin:10px 0;background:#fcfdff}summary{cursor:pointer;font-weight:700;color:#173b77}
+footer{text-align:center;color:var(--muted);padding:25px}
+@media(max-width:650px){nav ol{columns:1}.steps{grid-template-columns:1fr}nav,section,.note{padding:17px}}
+@media print{body{background:#fff}header{print-color-adjust:exact}section,nav,.note{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><div>
+<p><strong>GUÍA DIDÁCTICA · PYTHON Y OPENCV</strong></p>
+<h1>Detección y localización de objetos</h1>
+<p>Explicación paso a paso de <code>cv2.findContours()</code>, <code>cv2.contourArea()</code> y <code>cv2.boundingRect()</code>, con ejemplos, programa integrado, errores frecuentes y ejercicios.</p>
+</div></header>
+<main>
+<nav><h2>Contenido</h2><ol>
+<li><a href="#objetivos">Objetivos</a></li><li><a href="#preparacion">Preparación de la imagen</a></li>
+<li><a href="#find">findContours()</a></li><li><a href="#area">contourArea()</a></li>
+<li><a href="#rect">boundingRect()</a></li><li><a href="#integrado">Programa integrado</a></li>
+<li><a href="#errores">Errores frecuentes</a></li><li><a href="#practica">Práctica</a></li><li><a href="#resumen">Resumen</a></li>
+</ol></nav>
+
+<section id="objetivos"><h2>1. Objetivos de aprendizaje</h2>
+<p>Al finalizar esta guía podrás:</p><ul>
+<li>Explicar qué es un contorno y por qué suele detectarse en una imagen binaria.</li>
+<li>Recuperar contornos con <code>cv2.findContours()</code>.</li>
+<li>Calcular el área de cada región con <code>cv2.contourArea()</code>.</li>
+<li>Obtener la posición y las dimensiones de un rectángulo con <code>cv2.boundingRect()</code>.</li>
+<li>Combinar los métodos para ignorar regiones pequeñas y dibujar recuadros sobre los objetos.</li>
+</ul></section>
+
+<section id="preparacion"><h2>2. Preparación: ¿qué es un contorno?</h2>
+<p>Un <strong>contorno</strong> es una secuencia de puntos que representa el límite de una región u objeto en una imagen. Puede describir la silueta de una moneda, una pieza, una mancha de color o cualquier forma que se haya separado del fondo.</p>
+<p>Estos métodos no reconocen por sí solos si una forma es una moneda o una pieza. Analizan las regiones que se han separado previamente. Por eso, la preparación de la imagen es importante.</p>
+<h3>¿Por qué utilizar una imagen binaria?</h3>
+<p>Una imagen binaria suele representar los objetos de interés en blanco (255) y el fondo en negro (0). De esta manera se facilita el análisis de las regiones.</p>
+<pre><code>import cv2
+
+imagen = cv2.imread("objetos.jpg")
+
+if imagen is None:
+    raise FileNotFoundError("No se encontró objetos.jpg")
+
+gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+
+# Los píxeles oscuros pasan a blanco; los claros, a negro.
+_, binaria = cv2.threshold(
+    gris, 127, 255, cv2.THRESH_BINARY_INV
+)
+
+cv2.imshow("Original", imagen)
+cv2.imshow("Imagen binaria", binaria)
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+<p><code>THRESH_BINARY_INV</code> invierte el resultado del umbral: los píxeles por debajo del umbral quedan blancos y los superiores quedan negros. Si los objetos son claros sobre fondo oscuro, prueba <code>cv2.THRESH_BINARY</code>. El valor 127 es un ejemplo que puede requerir ajustes.</p>
+<div class="note warn"><strong>Importante:</strong> procura que los objetos de interés queden blancos sobre un fondo negro. Si hay ruido, sombras o dos objetos conectados, la detección puede producir contornos incorrectos o agrupar varias formas en una sola región.</div>
+</section>
+
+<section id="find"><h2>3. <code>cv2.findContours()</code>: encontrar los límites</h2>
+<p><strong>Propósito:</strong> examinar una imagen binaria y devolver los contornos de sus regiones. Cada contorno contiene coordenadas de puntos que siguen el borde de una región blanca.</p>
+<h3>Sintaxis habitual</h3>
+<pre><code>contornos, jerarquia = cv2.findContours(
+    binaria,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)</code></pre>
+<table><thead><tr><th>Argumento</th><th>Explicación</th></tr></thead><tbody>
+<tr><td><code>binaria</code></td><td>Imagen en la que se buscan los contornos. Habitualmente es una imagen de un canal con objetos blancos y fondo negro.</td></tr>
+<tr><td><code>cv2.RETR_EXTERNAL</code></td><td>Recupera únicamente los contornos externos. Es útil cuando no se necesita analizar los huecos interiores de las formas.</td></tr>
+<tr><td><code>cv2.CHAIN_APPROX_SIMPLE</code></td><td>Reduce los puntos guardados al omitir puntos intermedios redundantes en segmentos rectos.</td></tr>
+</tbody></table>
+<h3>¿Qué devuelve?</h3>
+<ul><li><code>contornos</code>: una lista de contornos. Cada elemento contiene puntos de coordenadas. Si no se detecta ninguno, la lista estará vacía.</li>
+<li><code>jerarquia</code>: describe relaciones entre contornos: cuál es el siguiente, el anterior, el primer hijo y el contorno padre. Las relaciones inexistentes se indican con <code>-1</code>.</li></ul>
+<p>Con <code>RETR_EXTERNAL</code>, la jerarquía suele ser menos importante en ejercicios introductorios.</p>
+<h3>Ejemplo: contar y explorar los contornos</h3>
+<pre><code>contornos, jerarquia = cv2.findContours(
+    binaria,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+print("Contornos detectados:", len(contornos))
+
+for indice, contorno in enumerate(contornos):
+    print("Contorno:", indice + 1)
+    print("Puntos guardados:", len(contorno))</code></pre>
+<p><code>len(contornos)</code> cuenta los contornos, pero no garantiza que coincida con la cantidad real de objetos físicos. Un objeto puede producir fragmentos por el ruido y varios objetos conectados pueden formar un solo contorno.</p>
+<h3>Visualizar los contornos</h3>
+<pre><code>vista = imagen.copy()
+
+cv2.drawContours(
+    vista,
+    contornos,
+    -1,             # Dibujar todos
+    (0, 255, 0),    # Verde en BGR
+    2               # Grosor
+)
+
+cv2.imshow("Contornos", vista)
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+<p><code>cv2.drawContours()</code> sirve para dibujar los contornos detectados. El argumento <code>-1</code> indica que se dibujen todos. La copia evita modificar la imagen original.</p>
+<div class="note good"><strong>Idea clave:</strong> <code>findContours()</code> encuentra límites y entrega sus puntos. No calcula por sí solo el área ni dibuja un rectángulo delimitador.</div>
+</section>
+
+<section id="area"><h2>4. <code>cv2.contourArea()</code>: calcular el área</h2>
+<p><strong>Propósito:</strong> calcular el área encerrada por los puntos de un contorno. Se utiliza, por ejemplo, para descartar pequeñas regiones de ruido o seleccionar objetos según su tamaño aparente.</p>
+<h3>Sintaxis</h3><pre><code>area = cv2.contourArea(contorno)</code></pre>
+<p>El resultado se expresa en unidades de píxeles cuadrados. No equivale directamente a centímetros cuadrados ni a otra unidad física; para obtener una medida física se requiere calibrar la imagen y realizar una conversión apropiada.</p>
+<h3>Calcular el área de cada contorno</h3>
+<pre><code>for indice, contorno in enumerate(contornos):
+    area = cv2.contourArea(contorno)
+    print(f"Contorno {indice + 1}: {area:.2f} píxeles²")</code></pre>
+<p><code>enumerate()</code> permite recorrer la lista y obtener el índice junto con el contorno. El formato <code>:.2f</code> muestra dos decimales.</p>
+<h3>Filtrar regiones pequeñas</h3>
+<pre><code>area_minima = 500
+
+for contorno in contornos:
+    area = cv2.contourArea(contorno)
+
+    if area > area_minima:
+        print("Región aceptada:", area)
+    else:
+        print("Región descartada:", area)</code></pre>
+<p>El código acepta solo las regiones con área superior a 500 píxeles cuadrados. El umbral es ilustrativo: depende de la resolución, el tamaño de los objetos y la distancia de la cámara.</p>
+<h3>Área del contorno frente al área del rectángulo</h3>
+<p>Una forma circular o irregular no llena por completo el rectángulo que la contiene. Por eso, <code>cv2.contourArea(contorno)</code> normalmente no equivale a <code>ancho * alto</code>. El primero mide el área de la forma delimitada; el segundo mide el rectángulo envolvente.</p>
+<div class="note warn"><strong>Precaución:</strong> el área depende de la máscara binaria. Si se incluye sombra o ruido dentro de la región blanca, el cálculo puede no representar únicamente el objeto deseado.</div>
+</section>
+
+<section id="rect"><h2>5. <code>cv2.boundingRect()</code>: obtener el rectángulo delimitador</h2>
+<p><strong>Propósito:</strong> calcular el rectángulo más pequeño alineado con los ejes de la imagen que contiene todos los puntos del contorno.</p>
+<h3>Sintaxis</h3><pre><code>x, y, ancho, alto = cv2.boundingRect(contorno)</code></pre>
+<table><thead><tr><th>Valor</th><th>Significado</th></tr></thead><tbody>
+<tr><td><code>x</code></td><td>Coordenada horizontal del borde izquierdo.</td></tr>
+<tr><td><code>y</code></td><td>Coordenada vertical del borde superior.</td></tr>
+<tr><td><code>ancho</code></td><td>Ancho del rectángulo, en píxeles.</td></tr>
+<tr><td><code>alto</code></td><td>Alto del rectángulo, en píxeles.</td></tr>
+</tbody></table>
+<p>El origen <code>(0, 0)</code> se encuentra en la esquina superior izquierda. <code>x</code> aumenta hacia la derecha y <code>y</code> aumenta hacia abajo.</p>
+<h3>Dibujar el rectángulo</h3>
+<pre><code>x, y, ancho, alto = cv2.boundingRect(contorno)
+
+esquina_superior_izquierda = (x, y)
+esquina_inferior_derecha = (x + ancho, y + alto)
+
+cv2.rectangle(
+    imagen,
+    esquina_superior_izquierda,
+    esquina_inferior_derecha,
+    (0, 255, 0),  # Verde en BGR
+    2              # Grosor
+)</code></pre>
+<p><code>boundingRect()</code> solo calcula los valores. La función <code>cv2.rectangle()</code> dibuja el recuadro utilizando las coordenadas de las esquinas.</p>
+<h3>Consultar dimensiones</h3>
+<pre><code>print("Posición:", x, y)
+print("Ancho:", ancho)
+print("Alto:", alto)
+print("Área del rectángulo:", ancho * alto)</code></pre>
+<p><code>ancho * alto</code> representa el área rectangular que envuelve el contorno, no necesariamente el área real de la forma.</p>
+<div class="note good"><strong>Idea clave:</strong> el método convierte una colección de puntos en cuatro valores fáciles de usar: posición horizontal, posición vertical, ancho y alto.</div>
+</section>
+
+<section id="integrado"><h2>6. Programa integrado: detectar, filtrar y localizar</h2>
+<p>Este programa combina los tres métodos. Está planteado para una imagen con objetos oscuros sobre un fondo claro. La máscara se invierte para intentar dejar los objetos en blanco y el fondo en negro.</p>
+<div class="steps"><div><strong>1. Detectar</strong><code>findContours()</code><br>Encuentra los límites.</div><div><strong>2. Filtrar</strong><code>contourArea()</code><br>Ignora regiones pequeñas.</div><div><strong>3. Localizar</strong><code>boundingRect()</code><br>Calcula el rectángulo delimitador.</div></div>
+<pre><code>import cv2
+
+# 1. Cargar la imagen
+imagen = cv2.imread("objetos.jpg")
+
+if imagen is None:
+    raise FileNotFoundError("No se encontró objetos.jpg")
+
+# 2. Convertir a escala de grises
+gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY)
+
+# 3. Crear una máscara binaria
+_, binaria = cv2.threshold(
+    gris, 127, 255, cv2.THRESH_BINARY_INV
+)
+
+# 4. Encontrar los contornos externos
+contornos, jerarquia = cv2.findContours(
+    binaria,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+print("Contornos encontrados:", len(contornos))
+
+# Dibujar sobre una copia de la imagen
+resultado = imagen.copy()
+area_minima = 500
+
+# 5. Procesar cada contorno
+for numero, contorno in enumerate(contornos, start=1):
+
+    # Calcular el área
+    area = cv2.contourArea(contorno)
+
+    # Ignorar las regiones demasiado pequeñas
+    if area <= area_minima:
+        continue
+
+    # Obtener posición y dimensiones
+    x, y, ancho, alto = cv2.boundingRect(contorno)
+
+    # Dibujar el rectángulo
+    cv2.rectangle(
+        resultado,
+        (x, y),
+        (x + ancho, y + alto),
+        (0, 255, 0),
+        2
+    )
+
+    # Escribir el área sobre el objeto
+    texto = f"Area: {int(area)}"
+    posicion_texto = (x, max(y - 10, 20))
+
+    cv2.putText(
+        resultado,
+        texto,
+        posicion_texto,
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.5,
+        (0, 0, 255),
+        2
+    )
+
+    print(
+        f"Contorno {numero}: area={area:.1f}, "
+        f"x={x}, y={y}, ancho={ancho}, alto={alto}"
+    )
+
+# 6. Mostrar resultados
+cv2.imshow("Imagen binaria", binaria)
+cv2.imshow("Objetos detectados", resultado)
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+<h3>Explicación por etapas</h3><ol>
+<li><strong>Cargar y validar:</strong> <code>imread()</code> lee el archivo. Si la ruta no es válida, devuelve <code>None</code>; por eso se comprueba antes de procesar.</li>
+<li><strong>Preparar:</strong> la conversión a gris y la umbralización producen la imagen binaria.</li>
+<li><strong>Detectar:</strong> <code>findContours()</code> devuelve los límites de las regiones blancas.</li>
+<li><strong>Medir:</strong> <code>contourArea()</code> calcula el área de cada contorno.</li>
+<li><strong>Filtrar:</strong> <code>continue</code> salta el resto del ciclo cuando el área no supera el mínimo.</li>
+<li><strong>Localizar:</strong> <code>boundingRect()</code> obtiene coordenadas y dimensiones del contorno aceptado.</li>
+<li><strong>Mostrar:</strong> <code>rectangle()</code> dibuja el recuadro y <code>putText()</code> agrega la medida.</li>
+</ol>
+<div class="note warn"><strong>Si los resultados son incorrectos:</strong> inspecciona primero la ventana «Imagen binaria». Si los objetos no están bien separados del fondo, el problema está en la segmentación. Ajusta el umbral o utiliza otra técnica antes de modificar el análisis de contornos.</div>
+</section>
+
+<section id="errores"><h2>7. Errores frecuentes</h2>
+<table><thead><tr><th>Problema</th><th>Causa posible</th><th>Qué revisar</th></tr></thead><tbody>
+<tr><td>No aparecen contornos.</td><td>La máscara no tiene regiones blancas útiles.</td><td>Mostrar la máscara y revisar el umbral.</td></tr>
+<tr><td>La imagen completa parece un solo objeto.</td><td>El fondo se convirtió en blanco.</td><td>Probar <code>THRESH_BINARY</code> o <code>THRESH_BINARY_INV</code>.</td></tr>
+<tr><td>Hay demasiados contornos.</td><td>Ruido, reflejos o pequeñas regiones aisladas.</td><td>Mejorar la máscara y filtrar por área.</td></tr>
+<tr><td>Dos objetos reciben un solo recuadro.</td><td>Las regiones blancas se tocan o están conectadas.</td><td>Mejorar la segmentación para separarlas.</td></tr>
+<tr><td>El área no coincide con ancho × alto.</td><td>Son mediciones diferentes.</td><td>Distinguir el área del contorno del área rectangular.</td></tr>
+<tr><td>El recuadro aparece desplazado.</td><td>Las coordenadas pertenecen a otra escala o a una imagen recortada.</td><td>Usar la misma imagen de referencia o transformar las coordenadas.</td></tr>
+</tbody></table>
+</section>
+
+<section id="practica"><h2>8. Práctica para el estudiante</h2>
+<p><strong>Objetivo:</strong> detectar regiones en una fotografía, descartar las pequeñas y dibujar rectángulos alrededor de las aceptadas.</p>
+<ol>
+<li>Guarda como <code>objetos.jpg</code> una fotografía con objetos separados sobre un fondo uniforme.</li>
+<li>Ejecuta el programa integrado y observa la imagen binaria.</li>
+<li>Cambia <code>area_minima</code> a 100, 1000 y 3000. Compara cuántas regiones se dibujan.</li>
+<li>Imprime <code>ancho</code>, <code>alto</code> y <code>ancho * alto</code>. Compáralos con <code>contourArea(contorno)</code>.</li>
+<li>Prueba una imagen en la que dos objetos se toquen y describe el resultado.</li>
+</ol>
+<h3>Preguntas de comprobación</h3>
+<details><summary>1. ¿Qué devuelve findContours()?</summary><p>Una lista de contornos y una estructura jerárquica que describe sus relaciones, según el modo de recuperación elegido.</p></details>
+<details><summary>2. ¿Qué sucede si aumenta el área mínima?</summary><p>Se descartan más regiones pequeñas. Si el valor es demasiado alto, también pueden desaparecer objetos que sí interesan.</p></details>
+<details><summary>3. ¿boundingRect() dibuja el recuadro?</summary><p>No. Calcula las coordenadas y dimensiones. Para dibujarlo se utiliza, por ejemplo, <code>cv2.rectangle()</code>.</p></details>
+<details><summary>4. ¿La cantidad de contornos siempre es igual a la cantidad de objetos reales?</summary><p>No. Depende de la máscara, del ruido, de los huecos y de si las regiones están separadas o conectadas.</p></details>
+<details><summary>5. ¿El área del contorno equivale a ancho por alto?</summary><p>No. Una es el área de la forma; la otra es el área del rectángulo que la contiene.</p></details>
+</section>
+
+<section id="resumen"><h2>9. Resumen</h2>
+<table><thead><tr><th>Método</th><th>Pregunta que responde</th><th>Resultado</th></tr></thead><tbody>
+<tr><td><code>cv2.findContours()</code></td><td>¿Dónde están los límites?</td><td>Lista de contornos y jerarquía.</td></tr>
+<tr><td><code>cv2.contourArea()</code></td><td>¿Qué área encierra cada contorno?</td><td>Área en píxeles cuadrados.</td></tr>
+<tr><td><code>cv2.boundingRect()</code></td><td>¿Dónde está y cuánto mide su rectángulo?</td><td><code>x, y, ancho, alto</code>.</td></tr>
+</tbody></table>
+<p><strong>Secuencia que conviene recordar:</strong> primero detectar los contornos, después medirlos y finalmente obtener el rectángulo delimitador de los que cumplen el criterio.</p>
+<p>Documentación oficial:</p><ul>
+<li><a href="https://docs.opencv.org/4.x/d3/dc0/group__imgproc__shape.html" target="_blank" rel="noopener noreferrer">OpenCV: funciones de contornos y análisis de formas</a></li>
+<li><a href="https://docs.opencv.org/4.x/d4/d73/tutorial_py_contours_begin.html" target="_blank" rel="noopener noreferrer">OpenCV: introducción a los contornos en Python</a></li>
+<li><a href="https://docs.opencv.org/4.x/d7/d4d/tutorial_py_thresholding.html" target="_blank" rel="noopener noreferrer">OpenCV: umbralización</a></li>
+</ul>
+<div class="note good"><strong>Conclusión:</strong> los tres métodos son piezas complementarias de una detección básica de objetos. La calidad del resultado depende primero de una máscara binaria adecuada.</div>
+</section>
+<footer>Guía didáctica de Python y OpenCV · Archivo HTML adaptable a computadora y móvil.</footer>
+</main>
+</body>
+</html>

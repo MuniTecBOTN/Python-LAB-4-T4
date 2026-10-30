@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HSV Color Picker - OpenCV</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: #202124; background: #f3f4f6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 24px 14px; }
+    main { max-width: 620px; margin: 0 auto; background: white; padding: 24px; border-radius: 18px; box-shadow: 0 8px 30px #00000012; }
+    h1 { font-size: 1.65rem; margin: 0 0 6px; }
+    .subtitle { color: #666; margin: 0 0 22px; }
+    .preview { height: 155px; border-radius: 13px; border: 1px solid #00000018; display: grid; place-items: center; margin-bottom: 10px; transition: background .08s; }
+    .hex-large { font-size: 1.55rem; font-weight: 750; padding: 8px 14px; border-radius: 10px; background: #ffffffb8; }
+    .section { padding: 19px 0; border-bottom: 1px solid #e5e7eb; }
+    .section:last-of-type { border-bottom: 0; }
+    .line { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    h2 { font-size: 1.05rem; margin: 0; }
+    output { font-size: 1.15rem; font-weight: 750; font-variant-numeric: tabular-nums; }
+    .gradient { height: 22px; border-radius: 8px; margin: 12px 0 5px; border: 1px solid #00000012; }
+    input[type="range"] { width: 100%; margin: 10px 0 0; cursor: pointer; accent-color: #333; }
+    .marks { display: flex; justify-content: space-between; color: #6b7280; font-size: .75rem; margin-top: 3px; }
+    .note { display: flex; justify-content: space-between; gap: 8px; color: #6b7280; font-size: .78rem; margin-top: 6px; }
+    .values { padding-top: 20px; }
+    .values h2 { font-size: 1.15rem; margin-bottom: 12px; }
+    .value-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; }
+    .value-label { color: #6b7280; min-width: 42px; }
+    .value-text { font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+    button { border: 1px solid #d1d5db; border-radius: 9px; padding: 8px 11px; background: white; cursor: pointer; font: inherit; font-size: .86rem; white-space: nowrap; }
+    button:hover { background: #f3f4f6; }
+    .reset { width: 100%; margin-top: 15px; padding: 11px; background: #202124; color: white; border-color: #202124; }
+    .reset:hover { background: #3c4043; }
+    @media (max-width: 420px) { main { padding: 18px; } .value-row { flex-wrap: wrap; } .value-text { flex: 1; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>HSV Color Picker</h1>
+  <p class="subtitle">Ajusta las tres barras para seleccionar un color en la escala HSV de OpenCV.</p>
+
+  <div id="preview" class="preview" aria-label="Vista previa del color">
+    <span id="hexLarge" class="hex-large">#FF0000</span>
+  </div>
+
+  <section class="section">
+    <div class="line"><h2>H — Hue (Matiz)</h2><output id="hOut" for="h">0</output></div>
+    <div id="hGradient" class="gradient" aria-hidden="true"></div>
+    <input id="h" type="range" min="0" max="179" step="1" value="0" aria-label="Matiz, de 0 a 179">
+    <div class="marks"><span>0</span><span>45</span><span>90</span><span>135</span><span>179</span></div>
+    <div class="note"><span>0 · Rojo</span><span>179 · Rojo</span></div>
+  </section>
+
+  <section class="section">
+    <div class="line"><h2>S — Saturation (Saturación)</h2><output id="sOut" for="s">255</output></div>
+    <div id="sGradient" class="gradient" aria-hidden="true"></div>
+    <input id="s" type="range" min="0" max="255" step="1" value="255" aria-label="Saturación, de 0 a 255">
+    <div class="marks"><span>0</span><span>64</span><span>128</span><span>192</span><span>255</span></div>
+    <div class="note"><span>0 · Sin saturación</span><span>255 · Máxima</span></div>
+  </section>
+
+  <section class="section">
+    <div class="line"><h2>V — Value (Brillo)</h2><output id="vOut" for="v">255</output></div>
+    <div id="vGradient" class="gradient" aria-hidden="true"></div>
+    <input id="v" type="range" min="0" max="255" step="1" value="255" aria-label="Brillo, de 0 a 255">
+    <div class="marks"><span>0</span><span>64</span><span>128</span><span>192</span><span>255</span></div>
+    <div class="note"><span>0 · Negro</span><span>255 · Máximo brillo</span></div>
+  </section>
+
+  <section class="values">
+    <h2>Valores del color</h2>
+    <div class="value-row">
+      <span class="value-label">HSV</span><span id="hsvText" class="value-text">0, 255, 255</span>
+      <button type="button" data-copy="hsv">Copiar HSV</button>
+    </div>
+    <div class="value-row">
+      <span class="value-label">RGB</span><span id="rgbText" class="value-text">255, 0, 0</span>
+      <button type="button" data-copy="rgb">Copiar RGB</button>
+    </div>
+    <div class="value-row">
+      <span class="value-label">HEX</span><span id="hexText" class="value-text">#FF0000</span>
+      <button type="button" data-copy="hex">Copiar HEX</button>
+    </div>
+    <button id="reset" type="button" class="reset">Restablecer color</button>
+  </section>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const controls = { h: $("h"), s: $("s"), v: $("v") };
+  let current = { h: 0, s: 255, v: 255, rgb: [255, 0, 0], hex: "#FF0000" };
+
+  // H usa el rango OpenCV 0–179; se convierte a grados multiplicando por 2.
+  function hsvToRgb(h, s, v) {
+    const H = h * 2;
+    const S = s / 255;
+    const V = v / 255;
+    const C = V * S;
+    const X = C * (1 - Math.abs((H / 60) % 2 - 1));
+    const m = V - C;
+    let r = 0, g = 0, b = 0;
+
+    if (H < 60)       [r, g, b] = [C, X, 0];
+    else if (H < 120) [r, g, b] = [X, C, 0];
+    else if (H < 180) [r, g, b] = [0, C, X];
+    else if (H < 240) [r, g, b] = [0, X, C];
+    else if (H < 300) [r, g, b] = [X, 0, C];
+    else              [r, g, b] = [C, 0, X];
+
+    return [
+      Math.round((r + m) * 255),
+      Math.round((g + m) * 255),
+      Math.round((b + m) * 255)
+    ];
+  }
+
+  function toHex(rgb) {
+    return "#" + rgb.map(n => n.toString(16).padStart(2, "0")).join("").toUpperCase();
+  }
+
+  function update() {
+    const h = Number(controls.h.value);
+    const s = Number(controls.s.value);
+    const v = Number(controls.v.value);
+    const rgb = hsvToRgb(h, s, v);
+    const hex = toHex(rgb);
+
+    current = { h, s, v, rgb, hex };
+    $("hOut").value = h;
+    $("sOut").value = s;
+    $("vOut").value = v;
+    $("hsvText").textContent = `${h}, ${s}, ${v}`;
+    $("rgbText").textContent = rgb.join(", ");
+    $("hexText").textContent = hex;
+    $("hexLarge").textContent = hex;
+    $("preview").style.backgroundColor = hex;
+
+    // Gradiente del matiz: arcoíris completo y cierre en rojo.
+    $("hGradient").style.background =
+      "linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000)";
+
+    const noSaturation = toHex(hsvToRgb(h, 0, v));
+    const fullSaturation = toHex(hsvToRgb(h, 255, v));
+    $("sGradient").style.background =
+      `linear-gradient(to right, ${noSaturation}, ${fullSaturation})`;
+
+    const black = toHex(hsvToRgb(h, s, 0));
+    const fullBrightness = toHex(hsvToRgb(h, s, 255));
+    $("vGradient").style.background =
+      `linear-gradient(to right, ${black}, ${fullBrightness})`;
+  }
+
+  Object.values(controls).forEach(control => control.addEventListener("input", update));
+
+  document.querySelectorAll("[data-copy]").forEach(button => {
+    button.addEventListener("click", async () => {
+      const type = button.dataset.copy;
+      const text = type === "hsv" ? `${current.h}, ${current.s}, ${current.v}`
+        : type === "rgb" ? current.rgb.join(", ")
+        : current.hex;
+      try {
+        await navigator.clipboard.writeText(text);
+        const original = button.textContent;
+        button.textContent = "¡Copiado!";
+        setTimeout(() => button.textContent = original, 1200);
+      } catch {
+        window.prompt("Copia este valor:", text);
+      }
+    });
+  });
+
+  $("reset").addEventListener("click", () => {
+    controls.h.value = 0;
+    controls.s.value = 255;
+    controls.v.value = 255;
+    update();
+  });
+
+  update();
+</script>
+</body>
+</html>
