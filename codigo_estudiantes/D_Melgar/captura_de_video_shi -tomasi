@@ -1,0 +1,98 @@
+import cv2
+import numpy as np
+
+# Inicializar la cámara web
+cap = cv2.VideoCapture(0)
+
+# Parámetros para Shi-Tomasi
+feature_params = dict(
+    maxCorners=100, qualityLevel=0.3, minDistance=7, blockSize=7
+)
+
+# Parámetros para Lucas-Kanade
+lk_params = dict(
+    winSize=(15, 15),
+    maxLevel=2,
+    criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03),
+)
+
+# Leer el primer cuadro
+ret, old_frame = cap.read()
+if not ret:
+  print("No se pudo acceder a la cámara.")
+  cap.release()
+  exit()
+
+old_gray = cv2.cvtColor(old_frame, cv2.COLOR_BGR2GRAY)
+p0 = cv2.goodFeaturesToTrack(old_gray, mask=None, **feature_params)
+
+# Crear máscara para los rastros
+mask = np.zeros_like(old_frame)
+
+print(
+    "Presiona la letra 'ESC' en la ventana del video para salir de la"
+    " aplicación."
+)
+
+while True:
+  ret, frame = cap.read()
+  if not ret:
+    print("Error al leer el cuadro de la cámara.")
+    break
+
+  frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+  # Si por alguna razón p0 es None o está vacío, detectamos puntos de nuevo
+  if p0 is None or len(p0) == 0:
+    p0 = cv2.goodFeaturesToTrack(frame_gray, mask=None, **feature_params)
+    old_gray = frame_gray.copy()
+    continue
+
+  # Calcular el flujo óptico
+  p1, st, err = cv2.calcOpticalFlowPyrLK(
+      old_gray, frame_gray, p0, None, **lk_params
+  )
+
+  if p1 is not None:
+    # Seleccionar puntos rastreados con éxito
+    good_new = p1[st == 1]
+    good_old = p0[st == 1]
+
+    # ¡PUNTO CLAVE!: Si nos quedamos con menos de 10 puntos, redetectamos automáticamente
+    if len(good_new) < 10:
+      p0 = cv2.goodFeaturesToTrack(frame_gray, mask=None, **feature_params)
+      old_gray = frame_gray.copy()
+      mask = np.zeros_like(frame)  # Limpiar rastros viejos
+      continue
+
+    # Dibujar las líneas de rastro y los puntos
+    for i, (new, old) in enumerate(zip(good_new, good_old)):
+      a, b = new.ravel()
+      c, d = old.ravel()
+      a, b, c, d = int(a), int(b), int(c), int(d)
+
+      mask = cv2.line(mask, (a, b), (c, d), (0, 255, 0), 2)
+      frame = cv2.circle(frame, (a, b), 5, (0, 0, 255), -1)
+
+    # Efecto de desvanecimiento: borra lentamente las líneas viejas para que no se sature
+    mask = cv2.addWeighted(mask, 0.85, np.zeros_like(mask), 0.15, 0)
+
+    # Combinar video y rastros
+    img = cv2.add(frame, mask)
+    cv2.imshow("Seguimiento de Esquinas (Shi-Tomasi - Optimizado)", img)
+
+    # Actualizar para el siguiente ciclo
+    old_gray = frame_gray.copy()
+    p0 = good_new.reshape(-1, 1, 2)
+  else:
+    # Si falla el flujo, reiniciamos
+    p0 = cv2.goodFeaturesToTrack(frame_gray, mask=None, **feature_params)
+    old_gray = frame_gray.copy()
+
+  # Salir con la tecla ESC (27)
+  k = cv2.waitKey(30) & 0xFF
+  if k == 27:
+    break
+
+cap.release()
+cv2.destroyAllWindows()

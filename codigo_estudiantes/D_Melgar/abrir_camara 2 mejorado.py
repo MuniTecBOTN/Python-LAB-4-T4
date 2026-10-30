@@ -1,4 +1,4 @@
-
+import numpy as np
 import cv2
 import time
 
@@ -7,6 +7,18 @@ CAMARA_ID = 0
 AREA_MINIMA = 10000
 UMBRAL = 100
 MARGEN_CAJA = 10
+
+# Configuración Harris
+HARRIS_BLOCK_SIZE = 2
+HARRIS_KSIZE = 3
+HARRIS_K = 0.04
+HARRIS_UMBRAL = 0.01
+
+# Configuración Shi-Tomasi
+MAX_CORNERS = 100
+QUALITY_LEVEL = 0.01
+MIN_DISTANCE = 10
+BLOCK_SIZE = 3
 
 # Inicializar cámara
 camara = cv2.VideoCapture(CAMARA_ID)
@@ -54,6 +66,59 @@ try:
         imagen_grises = cv2.cvtColor(
             fotograma, cv2.COLOR_BGR2GRAY
         )
+        
+        # Preparar imagen para Harris
+        imagen_float = np.float32(imagen_grises)
+
+        # Aplicar detector Harris
+        respuesta_harris = cv2.cornerHarris(
+            imagen_float,
+            HARRIS_BLOCK_SIZE,
+            HARRIS_KSIZE,
+            HARRIS_K
+        )
+
+        # Dilatar para visualizar mejor las esquinas
+        respuesta_harris = cv2.dilate(
+            respuesta_harris,
+            None
+        )
+
+        # Identificar esquinas mediante umbral relativo
+        umbral_harris = (
+            HARRIS_UMBRAL * respuesta_harris.max()
+        )
+
+        # Marcar esquinas Harris en rojo
+        fotograma[
+            respuesta_harris > umbral_harris
+        ] = [0, 0, 255]
+        
+                # Detectar esquinas mediante Shi-Tomasi
+        esquinas = cv2.goodFeaturesToTrack(
+            imagen_grises,
+            maxCorners=MAX_CORNERS,
+            qualityLevel=QUALITY_LEVEL,
+            minDistance=MIN_DISTANCE,
+            blockSize=BLOCK_SIZE
+        )
+
+        # Dibujar esquinas detectadas
+        if esquinas is not None:
+
+            esquinas = np.int32(esquinas)
+
+            for esquina in esquinas:
+
+                x, y = esquina.ravel()
+
+                cv2.circle(
+                    fotograma,
+                    (x, y),
+                    5,
+                    (255, 0, 0),
+                    -1
+                )
 
         # Crear imagen binaria invertida
         _, imagen_binaria = cv2.threshold(
@@ -62,6 +127,8 @@ try:
             255,
             cv2.THRESH_BINARY_INV
         )
+        
+        
 
         # Encontrar contornos simplificados
         contornos, _ = cv2.findContours(
