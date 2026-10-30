@@ -126,3 +126,4 @@ finally:
     # Liberar recursos incluso si ocurre un error
     camara.release()
     cv2.destroyAllWindows()
+n
