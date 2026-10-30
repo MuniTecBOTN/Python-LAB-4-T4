@@ -1,7 +1,7 @@
 
 import cv2
 import numpy as np
-objeto = "control"
+objeto = "telefono encendido"
 # Cargar imagen de referencia
 plantilla = cv2.imread(f"{objeto}.jpg")
 #plantilla = cv2.resize(plantilla, (640, 480))
@@ -16,7 +16,7 @@ plantilla_gris = cv2.cvtColor(
 
 # Crear detector ORB
 orb = cv2.ORB_create(
-    nfeatures=1500,
+    nfeatures=1000,
     scaleFactor=1.2,
     nlevels=8
 )
@@ -35,7 +35,7 @@ plantilla_puntos = cv2.drawKeypoints(
     puntos_plantilla,
     None,
     color=(0, 255, 0),
-    flags=cv2.DrawMatchesFlags_DRAW_RICH_KEYPOINTS
+    flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT
 )
 
 # Crear comparador de descriptores
@@ -101,7 +101,7 @@ try:
             puntos_fotograma,
             None,
             color=(0, 255, 0),
-            flags=cv2.DrawMatchesFlags_DRAW_RICH_KEYPOINTS
+            flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT
         )
 
         coincidencias_buenas = []
