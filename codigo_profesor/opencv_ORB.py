@@ -53,7 +53,7 @@ esquinas = np.float32([
 ]).reshape(-1, 1, 2)
 
 # Activar camara
-camara = cv2.VideoCapture(1)
+camara = cv2.VideoCapture(0)
 
 if not camara.isOpened():
     raise RuntimeError("No se pudo abrir la camara.")
