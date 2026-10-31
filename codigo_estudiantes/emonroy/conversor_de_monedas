@@ -1,0 +1,435 @@
+from customtkinter import *
+
+def click_boton_calcular():
+    cantidad_dolares = entrada_dolares.get()
+    try:
+        cantidad_dolares = float(cantidad_dolares)
+        cantidad_quetzales = cantidad_dolares * CAMBIO_QUETZALES
+        cantidad_pesos = cantidad_dolares * CAMBIO_PESOS
+        cantidad_euros = cantidad_dolares * CAMBIO_EUROS
+        
+        
+        etiqueta_cantidad_quetzales.configure(text=f"Q{cantidad_quetzales:,.2f}")
+        etiqueta_cantidad_pesos.configure(text=f"${cantidad_pesos:,.2f}")
+        etiqueta_cantidad_Euros.configure(text=f"€{cantidad_euros:,.2f}")
+        etiqueta_error.configure(text="Conversion Exitosa", fg_color=COLOR_VERDE)
+    
+    except ValueError:
+        print("ERROR: La cantidad ingresada no es valida", fg_color=COLOR_ROJO)
+        return
+    
+def click_boton_limpiar():
+        entrada_dolares.delete(0, "end")
+        etiqueta_cantidad_quetzales.configure(text="Q0.00")
+        etiqueta_cantidad_pesos.configure(text="$0.00")
+        etiqueta_cantidad_Euros.configure(text="€0.00")
+        etiqueta_error.configure(text="GOOD MACHINE", fg_color=COLOR_ASENTO_1)
+
+
+
+
+#ESTOS SON LOS COLORES
+COLOR_PRIMARIO = "#101827"
+COLOR_PRIMARIO_HOVER = "#101827"
+COLOR_FONDO_SECUNDARIO = "#FOF2F5"
+COLOR_SECUNDARIO = "#1B263B"
+COLOR_SECUNDARIO_HOVER = "#1B263B"
+COLOR_TEXTO_CLARO = "#FFFFFF"
+COLOR_TEXTO_OBSCURO = "#101827"
+COLOR_VERDE = "#10B981"
+COLOR_ROJO = "#FB1E6B"
+COLOR_BLANCO = "#FFFFFF"
+COLOR_FONDO= "#E3E5F3"
+COLOR_FONDO_OBCURO = "#101827"
+COLOR_BORDE = "#E3E5F3"
+COLOR_SOMBRA = "#DCDFEF"
+COLOR_ASENTO_1= "#23CEF9"
+COLOR_ASENTO_2= "#A87CFF"
+COLOR_ASENTO_3= "#E469E8"
+TRANSPARENTE = "transparent"
+ALTURA_ESTANDAR_WIDGET = 35
+
+CAMBIO_QUETZALES = 7.64
+CAMBIO_PESOS = 18.50
+CAMBIO_EUROS = 0.86
+
+ventana = CTk()
+ventana.title("EXCHANGE")
+ventana.geometry("500x620")
+
+ventana.grid_columnconfigure(0, weight=1)
+ventana.grid_rowconfigure(0, weight=1)
+
+set_appearance_mode("Dark")
+
+#AQUÍ TRABAJAMOS LAS VENTANAS
+contenedor_principal = CTkFrame(
+    master=ventana,
+    corner_radius=0,
+    fg_color=COLOR_FONDO_OBCURO,
+)
+
+contenedor_principal.grid(
+    row=0,
+    column=0,
+    sticky="nsew",
+)
+
+contenedor_principal.grid_columnconfigure(0, weight=1)
+contenedor_principal.grid_rowconfigure([0,1,2,3,4], weight=1)
+
+contenedor_titulos = CTkFrame(
+    master=contenedor_principal,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+)
+
+contenedor_titulos.grid(
+    row=0,
+    column=0,
+    sticky="ew",
+    padx=10
+)
+
+contenedor_principal.grid_columnconfigure(0, weight=1)
+contenedor_principal.grid_rowconfigure([0,1], weight=1)
+
+contenedor_dolares = CTkFrame(
+master=contenedor_principal,
+corner_radius=10,
+fg_color=COLOR_SECUNDARIO,
+)
+
+contenedor_dolares.grid(
+    row=1,
+    column=0,
+    sticky="nsew",
+    padx=20,
+    pady=10,
+)
+
+contenedor_dolares.grid_columnconfigure(0, weight=1)
+contenedor_dolares.grid_rowconfigure([0,1], weight=1)
+
+contenedor_botones = CTkFrame(
+    master=contenedor_principal,
+    corner_radius=20,
+    fg_color=TRANSPARENTE
+)
+
+contenedor_botones.grid(
+    row=2,
+    column=0,
+    sticky="nsew",
+    padx=20,
+    pady=10,
+)
+
+contenedor_botones.grid_columnconfigure(0, weight=1)
+contenedor_botones.grid_rowconfigure([0,1,], weight=1)
+
+contenedor_cambio = CTkFrame(
+    master=contenedor_principal,
+    corner_radius=20,
+    fg_color=TRANSPARENTE
+)
+
+contenedor_cambio.grid(
+    row=3,
+    column=0,
+    sticky="nsew",
+    padx=20,
+    pady=20,
+)
+
+
+contenedor_cambio.grid_columnconfigure(0, weight=1)
+contenedor_cambio.grid_rowconfigure([0,1,2], weight=1)
+
+
+contenedor_mensaje = CTkFrame(
+    master=contenedor_principal,
+    corner_radius=20,
+    fg_color=TRANSPARENTE,
+)
+
+contenedor_mensaje.grid(
+    row=4,
+    column=0,
+    sticky="nsew",
+    padx=20,
+    pady=10,
+)
+
+contenedor_mensaje.grid_columnconfigure(0, weight=1)
+contenedor_mensaje.grid_rowconfigure(0, weight=1)
+
+
+etiqueta_titulo = CTkLabel(
+    master=contenedor_titulos,
+    text="currency converter",
+    height=6,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_TEXTO_CLARO,
+    font=("Arial", 21, "bold")   
+)
+
+etiqueta_titulo.grid(
+    row=0,
+    column=0,
+    sticky="ew",
+    padx=20,
+    pady=(10, 5),
+)
+
+
+
+
+etiqueta_subtitulo = CTkLabel(
+    master=contenedor_titulos,
+    text="Convierte tus dolares a monedas internacionales",
+    height=ALTURA_ESTANDAR_WIDGET,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_TEXTO_CLARO,
+    font=("Arial", 14)
+)
+
+
+etiqueta_subtitulo.grid(
+    row=1,
+    column=0,
+    sticky="nsew",
+    padx=20,
+    pady=(0, 10),
+)
+
+
+etiqueta_dolares = CTkLabel(
+    master=contenedor_dolares,
+    text="Cantidad en Dolares (USD)",
+    height=ALTURA_ESTANDAR_WIDGET,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_TEXTO_CLARO,
+    font=("Arial", 14),
+)
+
+etiqueta_dolares.grid(
+    row=0,
+    column=0,
+    sticky="nsew",
+    padx=20,
+    pady=(10, 5),
+)
+
+entrada_dolares = CTkEntry(
+    master=contenedor_dolares,
+    placeholder_text="Ingrese su monto",
+    height=ALTURA_ESTANDAR_WIDGET,
+    corner_radius=10,
+    border_width=2,
+    border_color=COLOR_ASENTO_1,
+    fg_color=COLOR_PRIMARIO,
+    text_color=COLOR_TEXTO_CLARO,
+    placeholder_text_color=COLOR_SOMBRA,
+    justify="center",
+    font=("Arial", 14, "bold")
+)
+
+entrada_dolares.grid(
+    row=1,
+    column=0,
+    sticky="nsew",
+    padx=20,
+    pady=(5, 10),
+)
+
+boton_calcular = CTkButton(
+    master=contenedor_botones,
+    text="CALCULAR CONVERSION",
+    height= ALTURA_ESTANDAR_WIDGET,
+    corner_radius=10,
+    border_width=2,
+    fg_color=COLOR_ASENTO_1,
+    border_color=COLOR_SECUNDARIO,
+    text_color=COLOR_TEXTO_CLARO,
+    font=("Arial", 14, "bold"),
+    command=click_boton_calcular,
+)
+
+boton_calcular.grid(
+    row=0,
+    column=0,
+    sticky="nsew",
+    pady=(10, 5),
+)
+
+
+
+
+
+boton_limpiar = CTkButton(
+    master=contenedor_botones,
+    text="LIMPIAR",
+    height=ALTURA_ESTANDAR_WIDGET,
+    corner_radius=10,
+    border_width=2,
+    fg_color=COLOR_PRIMARIO,
+    hover_color=COLOR_SECUNDARIO,
+    border_color=COLOR_SECUNDARIO,
+    text_color=COLOR_TEXTO_CLARO,
+    font=("Arial", 14, "bold"),
+    command= click_boton_limpiar,
+)
+
+boton_limpiar.grid(
+    row=1,
+    column=0,
+    sticky="nsew",
+    pady=(5, 10),
+)
+
+
+etiqueta_simbolo_quetzales = CTkLabel(
+    master=contenedor_cambio,
+    text="(GTQ):",
+    width=230,
+    height=65,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_ASENTO_1,
+    font=("Arial", 22, "bold"),
+)
+
+etiqueta_simbolo_quetzales.grid(
+    row=0,
+    column=0,
+    sticky="ew",
+    padx=5,
+    pady=5,
+)
+
+
+etiqueta_cantidad_quetzales = CTkLabel(
+    master=contenedor_cambio,
+    text="Q0.00",
+    width=230,
+    height=65,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_ASENTO_1,
+    font=("Arial", 22, "bold"),
+)
+
+etiqueta_cantidad_quetzales.grid(
+    row=0,
+    column=1,
+    sticky="ew",
+    padx=5,
+    pady=5,
+)
+
+
+etiqueta_simbolo_pesos = CTkLabel(
+    master=contenedor_cambio,
+    text="(MXN):",
+    width=230,
+    height=65,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_ASENTO_1,
+    font=("Arial", 22, "bold"),
+)
+
+etiqueta_simbolo_pesos.grid(
+    row=1,
+    column=0,
+    sticky="ew",
+    padx=5,
+    pady=5,
+)
+
+
+etiqueta_cantidad_pesos = CTkLabel(
+    master=contenedor_cambio,
+    text="$0.00",
+    width=230,
+    height=65,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_ASENTO_1,
+    font=("Arial", 22, "bold"),
+)
+
+etiqueta_cantidad_pesos.grid(
+    row=1,
+    column=1,
+    sticky="ew",
+    padx=5,
+    pady=5,
+)
+
+etiqueta_simbolo_Euros = CTkLabel(
+    master=contenedor_cambio,
+    text="(EUR):",
+    width=230,
+    height=65,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_ASENTO_1,
+    font=("Arial", 22, "bold"),
+)
+
+etiqueta_simbolo_Euros.grid(
+    row=2,
+    column=0,
+    sticky="ew",
+    padx=5,
+    pady=5,
+)
+
+
+etiqueta_cantidad_Euros = CTkLabel(
+    master=contenedor_cambio,
+    text="€0.00",
+    width=230,
+    height=65,
+    corner_radius=0,
+    fg_color=TRANSPARENTE,
+    text_color=COLOR_ASENTO_1,
+    font=("Arial", 22, "bold"),
+)
+
+etiqueta_cantidad_Euros.grid(
+    row=2,
+    column=1,
+    sticky="ew",
+    padx=5,
+    pady=5,
+)
+
+
+etiqueta_error = CTkLabel(
+    master=contenedor_mensaje,
+    text="---",
+    height=ALTURA_ESTANDAR_WIDGET,
+    corner_radius=0,
+    fg_color=COLOR_ASENTO_1,
+    text_color=COLOR_TEXTO_CLARO,
+    font=("Arial", 14, "bold"),
+)
+
+etiqueta_error.grid(
+    row=0,
+    column=0,
+    sticky="ews",
+)
+
+ventana.bind("<Return>", lambda
+event: click_boton_calcular())
+
+
+
+ventana.mainloop()
