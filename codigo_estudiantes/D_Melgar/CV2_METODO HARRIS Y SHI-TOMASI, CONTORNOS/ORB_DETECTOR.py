@@ -7,10 +7,10 @@ import time
 # 1. CARGAR Y PREPARAR IMAGEN DE REFERENCIA
 # ==========================================
 
-query_img = cv2.imread("qs.jpg", cv2.IMREAD_GRAYSCALE)
+query_img = cv2.imread("imagenes_deteccion/1ss.jpg", cv2.IMREAD_GRAYSCALE)
 
 if query_img is None:
-    print("Error: No se pudo cargar qs.jpg")
+    print("Error: No se pudo cargar 1ss_.jpg")
     raise SystemExit
 
 # Mejorar el contraste local
