@@ -1,7 +1,11 @@
 
 import cv2
 import numpy as np
+<<<<<<< HEAD
 objeto = "objeto_negro1"
+=======
+objeto = "telefono encendido"
+>>>>>>> ae81c6305f0f0ad8edae57dbcacb1f46bbdee393
 # Cargar imagen de referencia
 plantilla = cv2.imread(f"{objeto}.jpg")
 #plantilla = cv2.resize(plantilla, (640, 480))
@@ -16,7 +20,7 @@ plantilla_gris = cv2.cvtColor(
 
 # Crear detector ORB
 orb = cv2.ORB_create(
-    nfeatures=1500,
+    nfeatures=1000,
     scaleFactor=1.2,
     nlevels=8
 )
@@ -35,7 +39,7 @@ plantilla_puntos = cv2.drawKeypoints(
     puntos_plantilla,
     None,
     color=(0, 255, 0),
-    flags=cv2.DrawMatchesFlags_DRAW_RICH_KEYPOINTS
+    flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT
 )
 
 # Crear comparador de descriptores
@@ -53,7 +57,7 @@ esquinas = np.float32([
 ]).reshape(-1, 1, 2)
 
 # Activar camara
-camara = cv2.VideoCapture(1)
+camara = cv2.VideoCapture(0)
 
 if not camara.isOpened():
     raise RuntimeError("No se pudo abrir la camara.")
@@ -101,7 +105,7 @@ try:
             puntos_fotograma,
             None,
             color=(0, 255, 0),
-            flags=cv2.DrawMatchesFlags_DRAW_RICH_KEYPOINTS
+            flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT
         )
 
         coincidencias_buenas = []
