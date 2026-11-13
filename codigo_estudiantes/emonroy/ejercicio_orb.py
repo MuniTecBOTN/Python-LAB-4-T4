@@ -7,7 +7,7 @@ import os
 # ==========================================
 TOTAL_PLANTILLAS = 12
 FORMATO_NOMBRES = "imagen_{}.jpg"
-ID_CAMARA = 0  # Ajustar ID de la cámara conectada
+ID_CAMARA = 1  # Ajustar ID de la cámara conectada
 TAMANO_ESTANDAR = (300, 300)  # Normaliza escala para que funcione de cerca y de lejos
 MIN_COINCIDENCIAS = 15        # Mínimo de puntos buenos para confirmar un objeto
 
