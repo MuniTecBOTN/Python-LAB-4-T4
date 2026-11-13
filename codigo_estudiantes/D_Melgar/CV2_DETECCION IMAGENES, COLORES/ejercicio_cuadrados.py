@@ -1,0 +1,83 @@
+import cv2
+import numpy as np
+
+nombre_archivo = "3_cuadrados 22.bmp"
+
+imagen_original = cv2.imread(nombre_archivo)
+
+if imagen_original is None:
+    raise FileNotFoundError(f"No se encontró:  {nombre_archivo}")
+
+altura_imagen, ancho_imagen, canales_color = imagen_original.shape
+
+print(f"INF_IMAGEN: {altura_imagen}x{ancho_imagen} - {canales_color}")
+
+imagen_grises = cv2.cvtColor(imagen_original, cv2.COLOR_BGR2GRAY)
+
+_, imagen_binaria = cv2.threshold(
+    imagen_grises,
+    127,
+    255,
+    cv2.THRESH_BINARY,
+)
+
+contornos,_ = cv2.findContours(
+    imagen_binaria,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)
+
+
+for index,contorno in enumerate(contornos):
+    area = cv2.contourArea(contorno)
+    if area < 10000:
+        continue
+    x_pi, y_pi, ancho_caja, alto_caja = cv2.boundingRect(contorno)
+    
+    
+    
+    cv2.rectangle(
+        imagen_original,
+        (x_pi-10, y_pi-10),
+        (x_pi + ancho_caja +10, y_pi + alto_caja+10),
+        (127,255,22),
+        2
+    )
+    
+    print(f"\nContorno #{index}")
+    print(f"AREA: {area} px")
+    for punto in contorno:
+        print(f"{punto}")
+        
+    cv2.drawContours(
+        imagen_original,
+        contornos,
+        index,
+        (0,255,0),
+        1
+    )
+    
+    etiqueta_y = y_pi -40
+    
+    if etiqueta_y <= 0:
+        etiqueta_y = y_pi + alto_caja + 45
+    
+    cv2.putText (
+        imagen_original,
+        "No. Objeto: #" + str(index) + 
+        f"\nArea: " + str(area),
+        (x_pi, max(etiqueta_y -10, -10)),
+        cv2.FONT_HERSHEY_COMPLEX,
+        0.6,
+        (255,255,0),
+        2
+    )
+    
+
+cv2.imshow("Imagen_binaria", imagen_binaria)
+cv2.imshow("Imagen_Original", imagen_original)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
