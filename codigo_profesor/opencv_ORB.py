@@ -1,7 +1,11 @@
 
 import cv2
 import numpy as np
+<<<<<<< HEAD
+objeto = "objeto_negro1"
+=======
 objeto = "telefono encendido"
+>>>>>>> ae81c6305f0f0ad8edae57dbcacb1f46bbdee393
 # Cargar imagen de referencia
 plantilla = cv2.imread(f"{objeto}.jpg")
 #plantilla = cv2.resize(plantilla, (640, 480))
