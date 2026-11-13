@@ -3,14 +3,15 @@ import numpy as np
 import os
 
 
-TOTAL_PLANTILLAS = 12
+TOTAL_OBJETOS = 3
 FORMATO_NOMBRES = "imagen_{}.jpg"
 ID_CAMARA = 0
 VISTAS_POR_OBJETO = 4
+TOTAL_PLANTILLAS = TOTAL_OBJETOS * VISTAS_POR_OBJETO
 MIN_BUENOS_MATCHES = 12
 MIN_INLIERS = 12
 MIN_RATIO_INLIERS = 0.55
-MARGEN_CLASIFICACION = 1.3
+MARGEN_CLASIFICACION = 2.0
 
 def preprocesamiento_antidesenfoque_banda(imagen):
     """
@@ -51,25 +52,30 @@ def cargar_descriptores_plantillas():
     orb = cv2.ORB_create(nfeatures=700, scaleFactor=1.2, nlevels=4)
     datos_plantillas = []
     
-    print(f"--- FASE 1: CARGANDO {TOTAL_PLANTILLAS} VISTAS DE 3 OBJETOS ---")
+    print(f"--- FASE 1: CARGANDO {TOTAL_PLANTILLAS} VISTAS DE {TOTAL_OBJETOS} OBJETOS ---")
     for i in range(1, TOTAL_PLANTILLAS + 1):
         path = FORMATO_NOMBRES.format(i)
         if not os.path.exists(path):
-            print(f"Advertencia: No se encuentra el archivo obligatorio: {path}")
-            continue
+            print(f"Error: No se encuentra la vista obligatoria: {path}")
+            return []
         img = cv2.imread(path)
+        if img is None:
+            print(f"Error: No se pudo leer la vista: {path}")
+            return []
         gris_textura, _ = preprocesamiento_antidesenfoque_banda(img)
         
         kp, des = orb.detectAndCompute(gris_textura, None)
-        if des is not None:
-            datos_plantillas.append({
-                'path': path, 
-                'kp': kp, 
-                'des': des, 
-                'shape': gris_textura.shape, 
-                'id': (i - 1) // VISTAS_POR_OBJETO + 1
-            })
-            print(f"-> Vista {i} indexada para Objeto {(i - 1) // VISTAS_POR_OBJETO + 1}.")
+        if des is None or len(des) == 0:
+            print(f"Error: No se encontraron características en la vista: {path}")
+            return []
+        datos_plantillas.append({
+            'path': path, 
+            'kp': kp, 
+            'des': des, 
+            'shape': gris_textura.shape, 
+            'id': (i - 1) // VISTAS_POR_OBJETO + 1
+        })
+        print(f"-> Vista {i} indexada para Objeto {(i - 1) // VISTAS_POR_OBJETO + 1}.")
     return datos_plantillas
 
 def clasificar_region(region, plantillas, orb, bf):
