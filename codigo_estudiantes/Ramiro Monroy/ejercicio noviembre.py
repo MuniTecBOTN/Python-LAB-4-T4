@@ -87,20 +87,17 @@ def crear_mascara_figuras(imagen):
         cv2.COLOR_BGR2GRAY
     )
 
-    # Estimar el fondo blanco
     fondo = cv2.GaussianBlur(
         gris,
         (0, 0),
         SIGMA_FONDO
     )
 
-    # Comparar el fondo con la imagen original
     contraste = cv2.subtract(
         fondo,
         gris
     )
 
-    # Separar las regiones oscuras
     _, mascara = cv2.threshold(
         contraste,
         UMBRAL_SEGMENTACION,
@@ -108,7 +105,6 @@ def crear_mascara_figuras(imagen):
         cv2.THRESH_BINARY
     )
 
-    # Eliminar ruido pequeño
     mascara = cv2.morphologyEx(
         mascara,
         cv2.MORPH_OPEN,
@@ -116,7 +112,6 @@ def crear_mascara_figuras(imagen):
         iterations=1
     )
 
-    # Cerrar pequeños huecos
     mascara = cv2.morphologyEx(
         mascara,
         cv2.MORPH_CLOSE,
@@ -164,7 +159,6 @@ def obtener_candidatos(imagen):
         if w < 8 or h < 8:
             continue
 
-        # Agregar margen alrededor de la figura
         margen = 5
 
         x1 = max(0, x - margen)
@@ -174,7 +168,6 @@ def obtener_candidatos(imagen):
         y2 = min(alto, y + h + margen)
 
         roi = imagen[y1:y2, x1:x2]
-
         mascara_roi = mascara[y1:y2, x1:x2]
 
         candidatos.append({
@@ -247,7 +240,6 @@ def extraer_plantilla(nombre, ruta):
     y2 = min(imagen.shape[0], y + h + margen)
 
     recorte = imagen[y1:y2, x1:x2]
-
     mascara_recorte = mascara[y1:y2, x1:x2]
 
     gris = procesar_gris(recorte)
@@ -329,7 +321,6 @@ def comparar_roi_con_plantilla(candidato, plantilla):
             m, n = par
 
             if m.distance < RATIO_TEST * n.distance:
-
                 buenas.append(m)
 
     if len(buenas) < MINIMO_COINCIDENCIAS:
@@ -494,6 +485,31 @@ def main():
 
     tiempo_anterior = time.time()
 
+    # ====================================================
+    # CONTADORES ACUMULATIVOS
+    # ====================================================
+
+    TIEMPO_ESTABILIDAD = 0.35
+    TIEMPO_REARME = 1.0
+
+    contadores = {
+        "PIEZA A": 0,
+        "PIEZA B": 0,
+        "PIEZA C": 0
+    }
+
+    inicio_presencia = {
+        nombre: None for nombre in contadores
+    }
+
+    ultima_deteccion = {
+        nombre: 0.0 for nombre in contadores
+    }
+
+    ya_contada = {
+        nombre: False for nombre in contadores
+    }
+
     print("SISTEMA DE INSPECCION INICIADO")
     print("ESC = Salir")
     print("M = Mostrar u ocultar mascara\n")
@@ -503,22 +519,18 @@ def main():
         while True:
 
             try:
-
                 correcto, frame = camara.read()
 
             except cv2.error as error:
 
                 print("Error al leer la camara:", error)
-
                 break
 
             if not correcto or frame is None or frame.size == 0:
 
                 print("No se recibio una imagen valida.")
-
                 break
 
-            # Separar figuras del fondo blanco
             candidatos, mascara = obtener_candidatos(frame)
 
             reconocidas = []
@@ -553,32 +565,21 @@ def main():
                         2
                     )
 
-                    poligono = resultado["poligono"].copy()
-
-                    poligono[:, 0, 0] += x
-                    poligono[:, 0, 1] += y
-
-                    cv2.polylines(
-                        frame,
-                        [poligono],
-                        True,
-                        (255, 0, 255),
-                        2
-                    )
+                    # Se conserva el calculo de homografia,
+                    # pero ya no se dibuja el contorno rosado.
 
                     cv2.putText(
                         frame,
                         etiqueta,
                         (x, max(22, y - 8)),
                         cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
+                        0.38,
                         color,
-                        2
+                        1
                     )
 
                 else:
 
-                    # Figura encontrada, pero sin clasificar
                     cv2.rectangle(
                         frame,
                         (x, y),
@@ -592,13 +593,53 @@ def main():
                         "NO IDENTIFICADA",
                         (x, max(22, y - 8)),
                         cv2.FONT_HERSHEY_SIMPLEX,
-                        0.45,
+                        0.35,
                         (0, 165, 255),
                         1
                     )
 
-            # Mostrar resultados
+            # ====================================================
+            # CONTABILIZAR SOLAMENTE PIEZAS RECONOCIDAS
+            # ====================================================
+
             clases = set(reconocidas)
+            ahora = time.time()
+
+            for nombre in contadores:
+
+                if nombre in clases:
+
+                    if inicio_presencia[nombre] is None:
+                        inicio_presencia[nombre] = ahora
+
+                    ultima_deteccion[nombre] = ahora
+
+                    if (
+                        not ya_contada[nombre]
+                        and ahora - inicio_presencia[nombre] >= TIEMPO_ESTABILIDAD
+                    ):
+
+                        contadores[nombre] += 1
+                        ya_contada[nombre] = True
+
+                        print(
+                            f"CONTABILIZADA: {nombre} | "
+                            f"TOTAL: {contadores[nombre]}"
+                        )
+
+                else:
+
+                    if (
+                        inicio_presencia[nombre] is not None
+                        and ahora - ultima_deteccion[nombre] >= TIEMPO_REARME
+                    ):
+
+                        inicio_presencia[nombre] = None
+                        ya_contada[nombre] = False
+
+            # ====================================================
+            # MOSTRAR RESULTADOS DE RECONOCIMIENTO
+            # ====================================================
 
             alto, ancho = frame.shape[:2]
 
@@ -649,8 +690,63 @@ def main():
                 1
             )
 
-            # Calcular FPS
-            ahora = time.time()
+            # ====================================================
+            # MOSTRAR CONTADORES ACUMULATIVOS
+            # ====================================================
+
+            total_reconocidas = sum(contadores.values())
+
+            cv2.rectangle(
+                frame,
+                (8, 112),
+                (350, 245),
+                (25, 25, 25),
+                -1
+            )
+
+            cv2.putText(
+                frame,
+                f"CONTADOR A: {contadores['PIEZA A']}",
+                (18, 140),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                (0, 255, 0),
+                2
+            )
+
+            cv2.putText(
+                frame,
+                f"CONTADOR B: {contadores['PIEZA B']}",
+                (18, 170),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                (0, 255, 0),
+                2
+            )
+
+            cv2.putText(
+                frame,
+                f"CONTADOR C: {contadores['PIEZA C']}",
+                (18, 200),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                (0, 255, 0),
+                2
+            )
+
+            cv2.putText(
+                frame,
+                f"TOTAL: {total_reconocidas}",
+                (18, 230),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.55,
+                (255, 255, 255),
+                2
+            )
+
+            # ====================================================
+            # CALCULAR FPS
+            # ====================================================
 
             fps = 1.0 / max(
                 ahora - tiempo_anterior,
@@ -684,7 +780,6 @@ def main():
             tecla = cv2.waitKey(1) & 0xFF
 
             if tecla == 27:
-
                 break
 
             elif tecla in (ord("m"), ord("M")):
@@ -700,7 +795,6 @@ def main():
     finally:
 
         camara.release()
-
         cv2.destroyAllWindows()
 
     print("\nSistema finalizado.")
@@ -711,5 +805,4 @@ def main():
 # ============================================================
 
 if __name__ == "__main__":
-
     main()
