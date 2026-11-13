@@ -18,7 +18,7 @@ ARCHIVOS = {
 }
 
 # CAMARA
-CAMARA_ID = 1
+CAMARA_ID = 0
 ANCHO_CAMARA = 640
 ALTO_CAMARA = 480
 
@@ -565,27 +565,17 @@ def main():
                         2
                     )
 
-                    poligono = resultado["poligono"].copy()
-
-                    poligono[:, 0, 0] += x
-                    poligono[:, 0, 1] += y
-
-                    cv2.polylines(
-                        frame,
-                        [poligono],
-                        True,
-                        (255, 0, 255),
-                        2
-                    )
+                    # Se conserva el calculo de homografia,
+                    # pero ya no se dibuja el contorno rosado.
 
                     cv2.putText(
                         frame,
                         etiqueta,
                         (x, max(22, y - 8)),
                         cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
+                        0.38,
                         color,
-                        2
+                        1
                     )
 
                 else:
@@ -603,7 +593,7 @@ def main():
                         "NO IDENTIFICADA",
                         (x, max(22, y - 8)),
                         cv2.FONT_HERSHEY_SIMPLEX,
-                        0.45,
+                        0.35,
                         (0, 165, 255),
                         1
                     )
