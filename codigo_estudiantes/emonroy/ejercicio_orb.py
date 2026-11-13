@@ -156,10 +156,10 @@ if __name__ == "__main__":
 
         for (bx, by, bw, bh) in cajas:
             # 1. Extraer solo el cuadro del objeto y normalizarlo a 300x300
-            recorte_cam = gris_frame[by:by+bh, bx:bx+bw]
+            recorte_cam = gris_frame[by-50:by+bh +50, bx-50:bx+bw+50]
             recorte_std = cv2.resize(recorte_cam, TAMANO_ESTANDAR)
             textura_cam = mejorar_textura_orb(recorte_std)
-
+            cv2.imshow("descriptores", textura_cam)
             # 2. Extraer puntos clave del recorte
             _, des_cam = orb.detectAndCompute(textura_cam, None)
 
