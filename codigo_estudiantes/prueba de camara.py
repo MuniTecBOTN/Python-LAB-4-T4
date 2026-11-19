@@ -1,25 +1,39 @@
+
 import cv2
 
-camara = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+print("Version OpenCV:", cv2.__version__)
 
-if not camara.isOpened():
-    print("ERROR: No se pudo abrir la camara")
-    exit()
+for backend_nombre, backend in [
+    ("MSMF", cv2.CAP_MSMF),
+    ("DSHOW", cv2.CAP_DSHOW)
+]:
+    print(f"\nProbando backend: {backend_nombre}")
 
-print("CAMARA ABIERTA")
+    camara = cv2.VideoCapture(0, backend)
 
-while True:
+    if not camara.isOpened():
+        print("No se pudo abrir la camara.")
+        camara.release()
+        continue
 
-    correcto, frame = camara.read()
+    try:
+        correcto, frame = camara.read()
 
-    if not correcto:
-        print("ERROR: No se pudo recibir imagen")
-        break
+        if correcto and frame is not None and frame.size > 0:
+            print("Camara funcionando correctamente.")
+            print("Resolucion:", frame.shape)
 
-    cv2.imshow("PRUEBA DE CAMARA", frame)
+            cv2.imshow("PRUEBA DE CAMARA", frame)
+            cv2.waitKey(3000)
+            cv2.destroyAllWindows()
+        else:
+            print("La camara se abre, pero no entrega imagen.")
 
-    if cv2.waitKey(1) & 0xFF == 27:
-        break
+    except cv2.error as error:
+        print("Error de OpenCV al leer:", error)
 
-camara.release()
+    finally:
+        camara.release()
+
 cv2.destroyAllWindows()
+print("\nPrueba terminada.")

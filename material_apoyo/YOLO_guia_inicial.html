@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Guía introductoria para trabajar con YOLO y Python mediante Ultralytics.">
+<title>Introducción práctica a YOLO con Python</title>
+<style>
+:root{
+  --bg:#f5f7fb;--surface:#ffffff;--surface2:#f0f4f9;--text:#172033;
+  --muted:#5d687b;--line:#dce3ed;--primary:#2457c5;--primary-soft:#eaf0ff;
+  --green:#16845b;--green-soft:#e8f7f0;--orange:#a85b12;--orange-soft:#fff4e5;
+  --code:#111827;--code-text:#e5edf8;--shadow:0 8px 24px rgba(25,45,80,.07);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:24px}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:linear-gradient(120deg,#eef3ff,#fff 68%);border-bottom:1px solid var(--line)}
+.hero{max-width:1180px;margin:auto;padding:54px 24px 42px}
+.eyebrow{color:var(--primary);font-size:.78rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+h1{font-size:clamp(2rem,4vw,3.25rem);line-height:1.12;max-width:850px;margin:12px 0}
+.hero p{max-width:760px;color:var(--muted);font-size:1.08rem;margin:14px 0 0}
+.hero-tags{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.tag{background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:.83rem;color:#34415a}
+.layout{max-width:1180px;margin:32px auto;padding:0 24px;display:grid;grid-template-columns:245px minmax(0,1fr);gap:28px;align-items:start}
+nav{position:sticky;top:20px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+nav strong{display:block;margin:0 0 10px;font-size:.9rem}
+nav a{display:block;text-decoration:none;color:var(--muted);padding:7px 9px;border-radius:8px;font-size:.9rem}
+nav a:hover{background:var(--primary-soft);color:var(--primary)}
+main{min-width:0}
+section{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:27px;margin-bottom:22px;box-shadow:var(--shadow)}
+h2{font-size:1.55rem;line-height:1.25;margin:0 0 14px}
+h3{font-size:1.08rem;margin:22px 0 8px}
+p{margin:9px 0}
+.lead{color:var(--muted);margin-top:-3px}
+.callout{padding:14px 16px;border-radius:12px;margin:16px 0;background:var(--primary-soft);border-left:4px solid var(--primary)}
+.callout.green{background:var(--green-soft);border-color:var(--green)}
+.callout.orange{background:var(--orange-soft);border-color:var(--orange)}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:17px 0}
+.tile{background:var(--surface2);padding:15px;border-radius:12px}
+.tile b{display:block;margin-bottom:4px}
+.tile p{font-size:.92rem;color:var(--muted);margin:0}
+pre{position:relative;background:var(--code);color:var(--code-text);border-radius:13px;padding:19px;overflow:auto;margin:12px 0 16px;font: .88rem/1.6 Consolas,Monaco,monospace;tab-size:4}
+code{font-family:Consolas,Monaco,monospace}
+.copy{position:absolute;right:9px;top:9px;border:1px solid #536176;background:#263449;color:#fff;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:.75rem}
+.copy:hover{background:#35465f}
+.inline{background:var(--surface2);padding:2px 6px;border-radius:5px;color:#263b68}
+table{width:100%;border-collapse:collapse;margin:13px 0;font-size:.92rem}
+th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:var(--surface2)}
+ol,ul{padding-left:22px}
+li{margin:6px 0}
+.diagram{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;background:var(--surface2);border-radius:13px;padding:18px;margin:16px 0}
+.diagram span{background:white;border:1px solid var(--line);padding:11px 13px;border-radius:9px;font-weight:650;text-align:center}
+.arrow{color:var(--primary);font-size:1.3rem;font-weight:800}
+.pill{display:inline-block;border-radius:6px;background:var(--green-soft);color:var(--green);font-size:.78rem;font-weight:750;padding:3px 8px}
+footer{text-align:center;color:var(--muted);padding:25px;font-size:.86rem}
+details{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:10px 0}
+summary{cursor:pointer;font-weight:650}
+@media(max-width:850px){.layout{grid-template-columns:1fr}nav{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px}nav strong{grid-column:1/-1}}
+@media(max-width:560px){.hero{padding:38px 18px}.layout{padding:0 14px;margin:20px auto}section{padding:20px}.grid{grid-template-columns:1fr}nav{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hero">
+    <div class="eyebrow">Guía práctica · Visión artificial</div>
+    <h1>Primeros pasos con YOLO en Python</h1>
+    <p>Una introducción progresiva a la detección de objetos utilizando YOLO y la biblioteca Ultralytics. Trabajaremos con imágenes, cámara web y video para comprender cómo un modelo identifica y localiza objetos.</p>
+    <div class="hero-tags"><span class="tag">Python</span><span class="tag">OpenCV</span><span class="tag">Ultralytics</span><span class="tag">Detección de objetos</span></div>
+  </div>
+</header>
+
+<div class="layout">
+<nav aria-label="Contenido de la guía">
+  <strong>Contenido</strong>
+  <a href="#objetivo">1. Objetivo</a>
+  <a href="#conceptos">2. ¿Qué es YOLO?</a>
+  <a href="#preparacion">3. Preparación</a>
+  <a href="#modelo">4. Cargar el modelo</a>
+  <a href="#imagen">5. Detectar en imagen</a>
+  <a href="#webcam">6. Cámara web</a>
+  <a href="#video">7. Analizar video</a>
+  <a href="#resultados">8. Leer resultados</a>
+  <a href="#reto">9. Ejercicio propuesto</a>
+  <a href="#referencias">10. Referencias</a>
+</nav>
+
+<main>
+<section id="objetivo">
+  <h2>1. Objetivo de la práctica</h2>
+  <p>Al finalizar esta guía, el estudiante podrá ejecutar un modelo YOLO preentrenado, detectar objetos en distintos tipos de entrada y consultar la información que devuelve el modelo.</p>
+  <div class="grid">
+    <div class="tile"><b>Reconocer</b><p>Identificar objetos como personas, vehículos, animales y elementos cotidianos.</p></div>
+    <div class="tile"><b>Localizar</b><p>Visualizar la posición de cada objeto mediante un rectángulo delimitador.</p></div>
+    <div class="tile"><b>Interpretar</b><p>Consultar la clase detectada y el nivel de confianza.</p></div>
+    <div class="tile"><b>Experimentar</b><p>Probar el modelo con imágenes, cámara web y archivos de video.</p></div>
+  </div>
+  <div class="callout"><b>Alcance:</b> esta actividad utiliza modelos ya entrenados. No se entrenará una red neuronal desde cero; primero aprenderemos a utilizarla y analizar sus resultados.</div>
+</section>
+
+<section id="conceptos">
+  <h2>2. ¿Qué es YOLO?</h2>
+  <p><b>YOLO</b> (You Only Look Once) es una familia de modelos de visión artificial utilizada para detectar objetos en imágenes y video. El modelo analiza una imagen y devuelve las detecciones encontradas en una sola ejecución de inferencia.</p>
+  <div class="diagram">
+    <span>Imagen o fotograma</span><b class="arrow">→</b>
+    <span>Modelo YOLO</span><b class="arrow">→</b>
+    <span>Objetos detectados</span>
+  </div>
+  <h3>¿Qué información produce una detección?</h3>
+  <ul>
+    <li><b>Clase:</b> categoría asignada al objeto, por ejemplo, persona, perro o automóvil.</li>
+    <li><b>Confianza:</b> puntuación entre 0 y 1 que expresa qué tan segura es la predicción del modelo. No debe interpretarse como una probabilidad perfectamente calibrada.</li>
+    <li><b>Bounding box:</b> rectángulo que delimita la ubicación del objeto en la imagen.</li>
+  </ul>
+  <div class="callout orange"><b>Importante:</b> un modelo preentrenado reconoce las clases incluidas en los datos con los que fue entrenado. No reconocerá automáticamente cualquier objeto personalizado.</div>
+</section>
+
+<section id="preparacion">
+  <h2>3. Preparación del entorno</h2>
+  <p>Se recomienda utilizar Python 3.9 o una versión compatible con la versión de Ultralytics instalada. Ejecuta los siguientes comandos en la terminal de tu entorno virtual o instalación de Python.</p>
+  <h3>Instalar Ultralytics</h3>
+  <pre><button class="copy" type="button">Copiar</button><code>pip install ultralytics</code></pre>
+  <h3>Instalar OpenCV (para mostrar video y cámara)</h3>
+  <pre><button class="copy" type="button">Copiar</button><code>pip install opencv-python</code></pre>
+  <h3>Comprobar la instalación</h3>
+  <pre><button class="copy" type="button">Copiar</button><code>from ultralytics import YOLO
+
+print("Ultralytics se instaló correctamente")</code></pre>
+  <div class="callout green"><b>Primera ejecución:</b> al cargar por primera vez un archivo de pesos como <code>yolo11n.pt</code>, Ultralytics puede descargarlo automáticamente. Se necesita conexión a Internet para esa descarga inicial.</div>
+  <p><b>Sobre el modelo:</b> en los ejemplos se utiliza <code>yolo11n.pt</code>, una variante pequeña de YOLO11 adecuada para comenzar y realizar pruebas. También puedes utilizar otro modelo compatible de la familia YOLO.</p>
+</section>
+
+<section id="modelo">
+  <h2>4. Cargar el modelo YOLO</h2>
+  <p>El primer paso consiste en importar la clase <code>YOLO</code> y crear un objeto a partir del archivo de pesos. Ese objeto permitirá realizar las detecciones.</p>
+  <pre><button class="copy" type="button">Copiar</button><code>from ultralytics import YOLO
+
+# Cargar un modelo preentrenado
+modelo = YOLO("yolo11n.pt")
+
+print("Modelo cargado correctamente")</code></pre>
+  <h3>Explicación</h3>
+  <ul>
+    <li><code>from ultralytics import YOLO</code> importa la clase que permite utilizar los modelos.</li>
+    <li><code>YOLO("yolo11n.pt")</code> carga los pesos del modelo. Si el archivo no está localmente, la biblioteca puede descargarlo.</li>
+    <li><code>modelo</code> es el objeto que reutilizaremos en los siguientes ejemplos.</li>
+  </ul>
+  <div class="callout"><b>Consejo:</b> carga el modelo una sola vez al inicio del programa. No es necesario volver a cargarlo dentro de cada iteración de la cámara o del video.</div>
+</section>
+
+<section id="imagen">
+  <h2>5. Ejemplo 1: detectar objetos en una imagen</h2>
+  <p>Comenzaremos con una imagen almacenada en el equipo. Coloca una fotografía llamada <code>objetos.jpg</code> en la misma carpeta del programa. Procura que contenga objetos comunes y que estén bien iluminados.</p>
+  <pre><button class="copy" type="button">Copiar</button><code>from ultralytics import YOLO
+
+modelo = YOLO("yolo11n.pt")
+
+# Analizar la imagen
+resultados = modelo("objetos.jpg")
+
+# Mostrar la imagen con las detecciones
+resultados[0].show()</code></pre>
+  <h3>Explicación paso a paso</h3>
+  <ol>
+    <li>Se carga el modelo preentrenado.</li>
+    <li>Se envía la ruta de la imagen al modelo.</li>
+    <li>El modelo analiza la imagen y devuelve una lista de resultados.</li>
+    <li><code>resultados[0].show()</code> muestra la imagen con los rectángulos, nombres de clases y puntuaciones.</li>
+  </ol>
+  <p>El método <code>show()</code> es útil para una primera comprobación visual. Más adelante accederemos directamente a los datos de las detecciones.</p>
+</section>
+
+<section id="webcam">
+  <h2>6. Ejemplo 2: detección en tiempo real con cámara web</h2>
+  <p>Ahora utilizaremos la cámara del equipo. OpenCV obtiene los fotogramas y YOLO analiza cada uno para localizar objetos.</p>
+  <pre><button class="copy" type="button">Copiar</button><code>import cv2
+from ultralytics import YOLO
+
+modelo = YOLO("yolo11n.pt")
+
+# Abrir la cámara predeterminada
+camara = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = camara.read()
+
+    if not ret:
+        print("No se pudo obtener imagen de la cámara")
+        break
+
+    # Ejecutar la detección
+    resultados = modelo(frame)
+
+    # Obtener el fotograma con las detecciones dibujadas
+    frame_detectado = resultados[0].plot()
+
+    cv2.imshow("Deteccion con YOLO", frame_detectado)
+
+    # Salir al presionar la tecla Q
+    if cv2.waitKey(1) &amp; 0xFF == ord("q"):
+        break
+
+camara.release()
+cv2.destroyAllWindows()</code></pre>
+  <h3>¿Qué hace cada parte?</h3>
+  <ul>
+    <li><code>cv2.VideoCapture(0)</code> abre la cámara predeterminada. Si hay varias cámaras, puede ser necesario probar otro índice.</li>
+    <li><code>camara.read()</code> obtiene un fotograma y devuelve si la lectura fue exitosa.</li>
+    <li><code>modelo(frame)</code> analiza el fotograma actual.</li>
+    <li><code>resultados[0].plot()</code> genera una imagen con las detecciones dibujadas.</li>
+    <li><code>cv2.imshow()</code> presenta el resultado en una ventana.</li>
+    <li><code>cv2.waitKey(1)</code> permite actualizar la ventana y detectar si se presionó Q.</li>
+  </ul>
+  <div class="callout orange"><b>Nota:</b> el procesamiento puede ser más lento que la captura de la cámara. El rendimiento depende del equipo, la resolución, el modelo y si se utiliza CPU o GPU.</div>
+</section>
+
+<section id="video">
+  <h2>7. Ejemplo 3: analizar un archivo de video</h2>
+  <p>La misma lógica puede utilizarse con un video previamente grabado. Guarda un archivo llamado <code>video.mp4</code> en la carpeta del programa.</p>
+  <pre><button class="copy" type="button">Copiar</button><code>from ultralytics import YOLO
+
+modelo = YOLO("yolo11n.pt")
+
+resultados = modelo(
+    source="video.mp4",
+    show=True,
+    save=True
+)
+
+print("Procesamiento finalizado")</code></pre>
+  <h3>Parámetros utilizados</h3>
+  <table>
+    <tr><th>Parámetro</th><th>Función</th></tr>
+    <tr><td><code>source</code></td><td>Indica el archivo de video que se analizará.</td></tr>
+    <tr><td><code>show=True</code></td><td>Muestra las detecciones durante el procesamiento.</td></tr>
+    <tr><td><code>save=True</code></td><td>Guarda el resultado anotado en el directorio de salida de Ultralytics.</td></tr>
+  </table>
+  <p>Este ejemplo permite comprobar que YOLO puede analizar secuencias de fotogramas, no solamente fotografías individuales.</p>
+</section>
+
+<section id="resultados">
+  <h2>8. Ejemplo 4: consultar los objetos detectados</h2>
+  <p>Además de dibujar los resultados, podemos acceder a la información que devuelve YOLO. Esto será especialmente útil cuando queramos construir un sistema que tome decisiones según los objetos encontrados.</p>
+  <pre><button class="copy" type="button">Copiar</button><code>from ultralytics import YOLO
+
+modelo = YOLO("yolo11n.pt")
+resultados = modelo("objetos.jpg")
+
+# Obtener el primer resultado
+resultado = resultados[0]
+
+# Recorrer las detecciones
+for caja in resultado.boxes:
+    clase_id = int(caja.cls[0])
+    confianza = float(caja.conf[0])
+
+    nombre = modelo.names[clase_id]
+
+    print("Objeto:", nombre)
+    print("Confianza:", round(confianza, 2))
+    print("-------------------")</code></pre>
+  <h3>Comprender las variables</h3>
+  <table>
+    <tr><th>Expresión</th><th>Significado</th></tr>
+    <tr><td><code>resultado.boxes</code></td><td>Contiene las cajas delimitadoras detectadas.</td></tr>
+    <tr><td><code>caja.cls[0]</code></td><td>Identificador numérico de la clase.</td></tr>
+    <tr><td><code>caja.conf[0]</code></td><td>Puntuación de confianza de la detección.</td></tr>
+    <tr><td><code>modelo.names[clase_id]</code></td><td>Nombre asociado al identificador de clase.</td></tr>
+  </table>
+  <div class="callout green"><b>Idea clave:</b> una detección no es solamente un rectángulo dibujado. También contiene datos que pueden utilizarse en conteos, clasificación de situaciones o automatización.</div>
+</section>
+
+<section id="reto">
+  <h2>9. Ejercicio propuesto</h2>
+  <p><span class="pill">Actividad práctica</span></p>
+  <h3>Contador sencillo de personas</h3>
+  <p>Modifica el ejemplo de cámara web para que el programa cuente cuántas personas aparecen en cada fotograma y muestre el total en la ventana.</p>
+  <h3>Pistas</h3>
+  <ol>
+    <li>Recorre las cajas de <code>resultados[0].boxes</code>.</li>
+    <li>Obtén el identificador de clase con <code>int(caja.cls[0])</code>.</li>
+    <li>Consulta el nombre de la clase usando <code>modelo.names[clase_id]</code>.</li>
+    <li>Si el nombre es <code>"person"</code>, incrementa un contador.</li>
+    <li>Utiliza <code>cv2.putText()</code> para mostrar el contador en el fotograma.</li>
+  </ol>
+  <details>
+    <summary>Ver una posible solución</summary>
+    <pre><button class="copy" type="button">Copiar</button><code>import cv2
+from ultralytics import YOLO
+
+modelo = YOLO("yolo11n.pt")
+camara = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = camara.read()
+    if not ret:
+        break
+
+    resultados = modelo(frame)
+    cantidad_personas = 0
+
+    for caja in resultados[0].boxes:
+        clase_id = int(caja.cls[0])
+        nombre = modelo.names[clase_id]
+
+        if nombre == "person":
+            cantidad_personas += 1
+
+    imagen = resultados[0].plot()
+
+    cv2.putText(
+        imagen,
+        f"Personas: {cantidad_personas}",
+        (20, 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (0, 255, 0),
+        2
+    )
+
+    cv2.imshow("Contador de personas", imagen)
+
+    if cv2.waitKey(1) &amp; 0xFF == ord("q"):
+        break
+
+camara.release()
+cv2.destroyAllWindows()</code></pre>
+    <p><b>Observación:</b> el contador representa las personas detectadas en el fotograma actual. No es un conteo único de personas que han pasado por la cámara; para eso se necesitaría incorporar seguimiento de objetos.</p>
+  </details>
+  <h3>Preguntas de comprobación</h3>
+  <ol>
+    <li>¿Cuál es la diferencia entre una imagen y un fotograma de video?</li>
+    <li>¿Qué representa la puntuación de confianza?</li>
+    <li>¿Qué información se obtiene de <code>caja.cls</code> y <code>caja.conf</code>?</li>
+    <li>¿Por qué se carga el modelo antes del ciclo de la cámara?</li>
+    <li>¿Qué limitación tiene un modelo preentrenado al intentar reconocer un objeto diseñado por nosotros?</li>
+  </ol>
+</section>
+
+<section id="referencias">
+  <h2>10. Referencias y documentación</h2>
+  <ul>
+    <li><a href="https://docs.ultralytics.com/" target="_blank" rel="noopener">Documentación oficial de Ultralytics</a> — instalación, modelos y tareas de predicción.</li>
+    <li><a href="https://docs.ultralytics.com/modes/predict/" target="_blank" rel="noopener">Ultralytics: Predict</a> — parámetros y resultados de inferencia.</li>
+    <li><a href="https://docs.opencv.org/4.x/" target="_blank" rel="noopener">Documentación oficial de OpenCV</a> — captura y visualización de imágenes y video.</li>
+  </ul>
+  <div class="callout"><b>Secuencia sugerida:</b> primero ejecuta la detección en una imagen. Después prueba la cámara web, analiza un video y finalmente modifica el programa para consultar información de las detecciones.</div>
+</section>
+</main>
+</div>
+<footer>Guía introductoria de visión artificial · YOLO + Python</footer>
+<script>
+document.querySelectorAll("pre").forEach(block=>{
+  const button=block.querySelector(".copy");
+  const code=block.querySelector("code");
+  if(!button || !code) return;
+  button.addEventListener("click",async()=>{
+    try{
+      await navigator.clipboard.writeText(code.innerText);
+      button.textContent="Copiado";
+      setTimeout(()=>button.textContent="Copiar",1300);
+    }catch(e){
+      button.textContent="No disponible";
+      setTimeout(()=>button.textContent="Copiar",1300);
+    }
+  });
+});
+</script>
+</body>
+</html>

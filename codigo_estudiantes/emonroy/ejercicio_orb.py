@@ -5,193 +5,194 @@ import os
 # ==========================================
 # CONFIGURACIÓN DEL SISTEMA INDUSTRIAL (12 IMÁGENES)
 # ==========================================
-# El sistema cargará automáticamente desde imagen_1.jpg hasta imagen_12.jpg
 TOTAL_PLANTILLAS = 12
 FORMATO_NOMBRES = "imagen_{}.jpg"
-ID_CAMARA = 0  # Ajustar ID de la cámara conectada
+ID_CAMARA = 1  # Ajustar ID de la cámara conectada
+TAMANO_ESTANDAR = (300, 300)  # Normaliza escala para que funcione de cerca y de lejos
+MIN_COINCIDENCIAS = 15        # Mínimo de puntos buenos para confirmar un objeto
 
-def preprocesamiento_antidesenfoque_banda(imagen):
+# Inicializamos un único detector ORB robusto y el comparador
+orb = cv2.ORB_create(nfeatures=1200, scaleFactor=1.2, nlevels=8)
+bf = cv2.BFMatcher(cv2.NORM_HAMMING)
+
+
+def mejorar_textura_orb(imagen_gris):
     """
-    Mantiene la resolución completa de la cámara, aplicando un umbralizado
-    adaptativo local básico para separar el fondo blanco de las siluetas.
+    Limpia ruido de compresión JPG y equilibra la iluminación local
+    usando CLAHE para que ORB funcione bajo cualquier luz.
     """
-    if imagen is None:
-        return None, []
-    
-    h_frame, w_frame = imagen.shape[:2]
-    
-    # 1. Escala de grises directa sin filtros complejos pesados
-    gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY) if len(imagen.shape) == 3 else imagen
-    difuminado = cv2.GaussianBlur(gris, (5, 5), 0)
-    
-    # 2. Umbralización adaptativa estándar para eliminar fondo blanco y sombras
-    mascara_adaptativa = cv2.adaptiveThreshold(
-        gris, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+    limpia = cv2.bilateralFilter(imagen_gris, 5, 50, 50)
+    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+    return clahe.apply(limpia)
+
+
+def detectar_objetos_en_escena(frame):
+    """
+    Encuentra las cajas delimitadoras (ROI) de los objetos sobre el fondo.
+    """
+    h_frame, w_frame = frame.shape[:2]
+    gris = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    suavizado = cv2.GaussianBlur(gris, (5, 5), 0)
+
+    mascara = cv2.adaptiveThreshold(
+        suavizado, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
         cv2.THRESH_BINARY_INV, 51, 7
     )
-    
-    kernel_morfo = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
-    mascara_limpia = cv2.morphologyEx(mascara_adaptativa, cv2.MORPH_OPEN, kernel_morfo)
-    mascara_perfecta = cv2.morphologyEx(mascara_limpia, cv2.MORPH_CLOSE, kernel_morfo)
-    
-    # 3. Extraer contornos de los objetos
-    contornos, _ = cv2.findContours(mascara_perfecta, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    
-    siluetas_fisicas = []
-    MARGEN = 25  # Zona de exclusión para evitar cuadros rojos en las esquinas del marco
-    
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5, 5))
+    mascara = cv2.morphologyEx(mascara, cv2.MORPH_OPEN, kernel)
+    mascara = cv2.morphologyEx(mascara, cv2.MORPH_CLOSE, kernel)
+
+    contornos, _ = cv2.findContours(mascara, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    cajas_validas = []
+    MARGEN = 20
+
     for c in contornos:
-        if cv2.contourArea(c) > 2000:
+        if cv2.contourArea(c) > 2500:
             bx, by, bw, bh = cv2.boundingRect(c)
-            # Descartar ruidos que toquen los bordes extremos del lente
             if (bx > MARGEN) and (by > MARGEN) and ((bx + bw) < (w_frame - MARGEN)) and ((by + bh) < (h_frame - MARGEN)):
-                siluetas_fisicas.append((bx, by, bw, bh))
-    
-    return gris, siluetas_fisicas
+                cajas_validas.append((bx, by, bw, bh))
+
+    return gris, cajas_validas
+
 
 def cargar_descriptores_plantillas():
-    """Carga los 12 moldes configurando ORB en su nivel de análisis más bajo y básico."""
-    # CONFIGURACIÓN MÍNIMA: Solo 400 puntos y una pirámide casi plana de 2 niveles
-    orb = cv2.ORB_create(nfeatures=400, scaleFactor=1.2, nlevels=2)
+    """
+    Carga las 12 imágenes .jpg, recorta el objeto si tiene fondo extra,
+    lo normaliza a 300x300 y extrae sus puntos clave.
+    """
     datos_plantillas = []
-    
-    print(f"--- FASE 1: CARGANDO {TOTAL_PLANTILLAS} MOLDES EN CONFIGURACIÓN MÍNIMA ---")
+    print(f"--- CARGANDO {TOTAL_PLANTILLAS} PLANTILLAS OPTIMIZADAS ---")
+
     for i in range(1, TOTAL_PLANTILLAS + 1):
         path = FORMATO_NOMBRES.format(i)
         if not os.path.exists(path):
-            print(f"Advertencia: No se encuentra el archivo obligatorio: {path}")
+            print(f"[!] Advertencia: No se encuentra {path}")
             continue
+
         img = cv2.imread(path)
-        gris_textura, _ = preprocesamiento_antidesenfoque_banda(img)
-        
-        kp, des = orb.detectAndCompute(gris_textura, None)
-        if des is not None:
+        if img is None:
+            continue
+
+        gris, cajas = detectar_objetos_en_escena(img)
+        if len(cajas) > 0:
+            bx, by, bw, bh = max(cajas, key=lambda b: b[2] * b[3])
+            recorte = gris[by:by+bh, bx:bx+bw]
+        else:
+            recorte = gris
+
+        recorte_std = cv2.resize(recorte, TAMANO_ESTANDAR)
+        textura_lista = mejorar_textura_orb(recorte_std)
+
+        kp, des = orb.detectAndCompute(textura_lista, None)
+        if des is not None and len(kp) > 10:
             datos_plantillas.append({
-                'path': path, 
-                'kp': kp, 
-                'des': des, 
-                'shape': gris_textura.shape, 
-                'id': i
+                "id": i,
+                "nombre": f"Objeto {i}",
+                "kp": kp,
+                "des": des
             })
-            print(f"-> Firma básica para Objeto {i} ({path}) indexada con éxito.")
+            print(f"-> {path} indexado correctamente ({len(kp)} puntos clave).")
+        else:
+            print(f"[!] {path} tiene muy poca textura para ORB.")
+
     return datos_plantillas
 
-def procesar_tiempo_real():
+
+def identificar_recorte(des_roi, plantillas):
+    """
+    Compara un recorte de la cámara contra las 12 plantillas usando
+    el Filtro de Lowe (Ratio Test) y devuelve el mejor candidato.
+    """
+    if des_roi is None or len(des_roi) < 10:
+        return None, 0
+
+    mejor_objeto = None
+    max_puntos_buenos = 0
+
+    for plantilla in plantillas:
+        matches = bf.knnMatch(plantilla["des"], des_roi, k=2)
+        puntos_buenos = 0
+
+        for par in matches:
+            if len(par) == 2:
+                m, n = par
+                if m.distance < 0.75 * n.distance:
+                    puntos_buenos += 1
+
+        if puntos_buenos > max_puntos_buenos:
+            max_puntos_buenos = puntos_buenos
+            mejor_objeto = plantilla["nombre"]
+
+    if max_puntos_buenos >= MIN_COINCIDENCIAS:
+        return mejor_objeto, max_puntos_buenos
+
+    return None, max_puntos_buenos
+
+
+# ==========================================
+# BUCLE PRINCIPAL EN TIEMPO REAL
+# ==========================================
+if __name__ == "__main__":
     plantillas = cargar_descriptores_plantillas()
-    if not plantillas:
-        print("Error: No se pudieron cargar las plantillas de base.")
-        return
 
-    # Detector en tiempo real configurado en su nivel de exigencia más bajo y veloz
-    orb = cv2.ORB_create(nfeatures=500, scaleFactor=1.2, nlevels=2)
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
-    
+    if len(plantillas) == 0:
+        print("Error: No se cargó ninguna plantilla válida. Revisa tus archivos .jpg.")
+        exit()
+
     cap = cv2.VideoCapture(ID_CAMARA)
-    if not cap.isOpened():
-        print(f"Error: No se puede acceder a la cámara.")
-        return
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
-    cap.set(cv2.CAP_PROP_FPS, 30)
-
-    # Definición de colores BGR solicitados
-    COLOR_VERDE = (0, 255, 0)   # Piezas individuales
-    COLOR_AZUL = (255, 0, 0)    # Piezas juntas (Conjunto)
-    COLOR_ROJO = (0, 0, 255)    # Desconocido
-    
-    print("\n--- ¡SISTEMA DE ANÁLISIS BÁSICO EN VIVO INICIADO! ---")
+    print("\n--- SISTEMA INICIADO (Presiona 'q' para salir) ---")
 
     while True:
         ret, frame = cap.read()
         if not ret:
+            print("Error al leer la cámara.")
             break
-            
-        frame_visualizacion = frame.copy()
-        
-        # Procesar la escena manteniendo el tamaño completo original
-        gray_actual, siluetas_fisicas = preprocesamiento_antidesenfoque_banda(frame)
-        
-        # Extraer una cantidad mínima y básica de características de la escena
-        kp_escena, des_escena = orb.detectAndCompute(gray_actual, None)
-        
-        piezas_detectadas_este_frame = []
-        siluetas_reconocidas_indices = set()
 
-        if des_escena is not None and len(des_escena) >= 2:
-            for p in plantillas:
-                matches = bf.knnMatch(p['des'], des_escena, k=2)
-                
-                buenos_matches = []
-                for match_pair in matches:
-                    if len(match_pair) == 2:
-                        m, n = match_pair
-                        # Ratio permisivo para emparejamientos macroscópicos simples
-                        if m.distance < 0.76 * n.distance:
-                            buenos_matches.append(m)
+        gris_frame, cajas = detectar_objetos_en_escena(frame)
 
-                # CONFIGURACIÓN BAJA: Solo se requieren 6 puntos coincidentes básicos para aprobar el objeto
-                if len(buenos_matches) >= 6:
-                    src_pts = np.float32([p['kp'][m.queryIdx].pt for m in buenos_matches]).reshape(-1, 1, 2)
-                    dst_pts = np.float32([kp_escena[m.trainIdx].pt for m in buenos_matches]).reshape(-1, 1, 2)
-                    
-                    M, mascara = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
-                    if M is not None:
-                        mask_flat = mascara.ravel()
-                        puntos_validos = dst_pts[mask_flat == 1]
-                        
-                        # Validación geométrica mínima reducida
-                        if len(puntos_validos) >= 4:
-                            h_p, w_p = p['shape']
-                            lista_coordenadas = [(0, 0), (0, h_p - 1), (w_p - 1, h_p - 1), (w_p - 1, 0)]
-                            esquinas_p = np.float32(lista_coordenadas).reshape(-1, 1, 2)
-                            
-                            esquinas_dst = cv2.perspectiveTransform(esquinas_p, M)
-                            
-                            centro_x = int(np.mean(puntos_validos[:, 0, 0]))
-                            centro_y = int(np.mean(puntos_validos[:, 0, 1]))
-                            
-                            piezas_detectadas_este_frame.append({
-                                'id': p['id'],
-                                'centro': (centro_x, centro_y),
-                                'esquinas': esquinas_dst
-                            })
-                            
-                            for s_idx, (bx, by, bw, bh) in enumerate(siluetas_fisicas):
-                                if bx <= centro_x <= (bx + bw) and by <= centro_y <= (by + bh):
-                                    siluetas_reconocidas_indices.add(s_idx)
+        for (bx, by, bw, bh) in cajas:
+            # 1. Extraer solo el cuadro del objeto y normalizarlo a 300x300
+            recorte_cam = gris_frame[by-50:by+bh +50, bx-50:bx+bw+50]
+            recorte_std = cv2.resize(recorte_cam, TAMANO_ESTANDAR)
+            textura_cam = mejorar_textura_orb(recorte_std)
+            cv2.imshow("descriptores", textura_cam)
+            # 2. Extraer puntos clave del recorte
+            _, des_cam = orb.detectAndCompute(textura_cam, None)
 
-        # 3. LÓGICA DE CONTROL DE COLOR SINCRO-PERFECTA
-        total_reconocidas = len(piezas_detectadas_este_frame)
-        color_actual_validas = COLOR_AZUL if total_reconocidas >= 2 else COLOR_VERDE
+            # 3. Comparar con las 12 plantillas
+            nombre_detectado, aciertos = identificar_recorte(des_cam, plantillas)
 
-        # Dibujar los recuadros sobre el tamaño de video completo original
-        for pieza in piezas_detectadas_este_frame:
-            cx, cy = pieza['centro']
-            cv2.polylines(frame_visualizacion, [np.int32(pieza['esquinas'])], True, color_actual_validas, 2, cv2.LINE_AA)
-            cv2.putText(frame_visualizacion, f"Molde Imagen {pieza['id']} OK", (cx - 55, cy - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_actual_validas, 2)
+            # 4. Interfaz visual según el resultado
+            if nombre_detectado is not None:
+                # VERDE: Objeto reconocido
+                color = (0, 255, 0)
+                etiqueta = f"Objeto reconocido: {nombre_detectado}"
+                cv2.rectangle(frame, (bx, by), (bx + bw, by + bh), color, 3)
+                cv2.rectangle(frame, (bx, by - 30), (bx + max(bw, 260), by), color, -1)
+                cv2.putText(frame, etiqueta, (bx + 5, by - 8),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 0), 2)
+            else:
+                # ROJO: Objeto no reconocido (BGR: Azul=0, Verde=0, Rojo=255)
+                color = (0, 0, 255)
+                etiqueta = "Objeto no reconocido"
+                cv2.rectangle(frame, (bx, by), (bx + bw, by + bh), color, 3)
+                cv2.rectangle(frame, (bx, by - 30), (bx + max(bw, 210), by), color, -1)
+                cv2.putText(frame, etiqueta, (bx + 5, by - 8),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.55, (255, 255, 255), 2)
 
-        # 4. Alerta ROJA inmediata si una silueta física avanza sin emparejamiento básico aprobado
-        for s_idx, (bx, by, bw, bh) in enumerate(siluetas_fisicas):
-            if s_idx not in siluetas_reconocidas_indices:
-                cv2.rectangle(frame_visualizacion, (bx, by), (bx + bw, by + bh), COLOR_ROJO, 2)
-                cv2.putText(frame_visualizacion, "PIEZA NO RECONOCIDA", (bx, by - 10),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLOR_ROJO, 2)
+        cv2.imshow("Reconocimiento Industrial ORB - Tiempo Real", frame)
 
-        # Telemetría en pantalla completa
-        cv2.putText(frame_visualizacion, f"Banda RealTime | Registradas: {total_reconocidas} | Desconocidas: {len(siluetas_fisicas) - len(siluetas_reconocidas_indices)}", 
-                    (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-        
-        cv2.imshow("Sistema Industrial De Banda Transportadora - Tiempo Real", frame_visualizacion)
-        
-        tecla = cv2.waitKey(1) & 0xFF
-        if tecla == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
     cap.release()
     cv2.destroyAllWindows()
 
-if __name__ == "__main__":
-    procesar_tiempo_real()
+
 
 
 
