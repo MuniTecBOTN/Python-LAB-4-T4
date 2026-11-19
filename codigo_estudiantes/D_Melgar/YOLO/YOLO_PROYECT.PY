@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -8,10 +7,8 @@ from ultralytics import YOLO
 # =====================================
 
 objetos = {
-    "Objeto principal": "referencias/qs.jpg",
-    "Botella": "referencias/botella.jpg",
-    "Libro": "referencias/libro.jpg",
-    "Celular": "referencias/celular.jpg"
+    # Puedes cambiar o agregar referencias de imágenes si lo deseas
+    "referencia": "YOLO/referencia.jpg", 
 }
 
 orb = cv2.ORB_create(nfeatures=2000)
@@ -19,11 +16,10 @@ orb = cv2.ORB_create(nfeatures=2000)
 referencias = {}
 
 for nombre, ruta in objetos.items():
-
     imagen = cv2.imread(ruta, cv2.IMREAD_GRAYSCALE)
 
     if imagen is None:
-        print(f"No se pudo cargar: {ruta}")
+        print(f"No se pudo cargar la imagen de referencia: {ruta}")
         continue
 
     kp, des = orb.detectAndCompute(imagen, None)
@@ -64,13 +60,15 @@ flann = cv2.FlannBasedMatcher(
 modelo = YOLO("yolo11n.pt")
 
 # =====================================
-# 4. ABRIR CAMARA
+# 4. ABRIR ARCHIVO DE VIDEO
 # =====================================
 
-cap = cv2.VideoCapture(1)
+# Reemplazamos la cámara web por el archivo de video
+video_path = "YOLO/Traffic.mp4"
+cap = cv2.VideoCapture(video_path)
 
 if not cap.isOpened():
-    print("No se pudo abrir la camara")
+    print(f"No se pudo abrir el video: {video_path}")
     exit()
 
 MIN_MATCHES = 15
@@ -80,10 +78,10 @@ MIN_MATCHES = 15
 # =====================================
 
 while True:
-
     ret, frame = cap.read()
 
     if not ret:
+        print("Fin del video o error al leer el fotograma.")
         break
 
     gris = cv2.cvtColor(
@@ -94,31 +92,20 @@ while True:
     kp2, des2 = orb.detectAndCompute(gris, None)
 
     # ---------------------------------
-    # DETECCION ORB DE VARIOS OBJETOS
+    # DETECCION ORB DE OBJETOS
     # ---------------------------------
-
-    if des2 is not None and len(des2) >= 2:
-
+    if des2 is not None and len(des2) >= 2 and len(referencias) > 0:
         for nombre, datos in referencias.items():
-
             des1 = datos["descriptores"]
             kp1 = datos["keypoints"]
             imagen_ref = datos["imagen"]
 
-            matches = flann.knnMatch(
-                des1,
-                des2,
-                k=2
-            )
-
+            matches = flann.knnMatch(des1, des2, k=2)
             buenos = []
 
             for par in matches:
-
                 if len(par) == 2:
-
                     m, n = par
-
                     if m.distance < 0.75 * n.distance:
                         buenos.append(m)
 
@@ -144,19 +131,13 @@ while True:
                 continue
 
             inliers = mascara.ravel().astype(bool)
-
-            validos = [
-                m for m, valido in zip(buenos, inliers)
-                if valido
-            ]
-
+            validos = [m for m, valido in zip(buenos, inliers) if valido]
             calidad = len(validos) / len(buenos)
 
             if len(validos) < MIN_MATCHES or calidad < 0.55:
                 continue
 
             h, w = imagen_ref.shape
-
             esquinas = np.float32([
                 [0, 0],
                 [0, h - 1],
@@ -164,35 +145,21 @@ while True:
                 [w - 1, 0]
             ]).reshape(-1, 1, 2)
 
-            proyectadas = cv2.perspectiveTransform(
-                esquinas,
-                matriz
-            )
-
+            proyectadas = cv2.perspectiveTransform(esquinas, matriz)
             area = abs(cv2.contourArea(proyectadas))
 
             if (
                 not np.isfinite(proyectadas).all()
-                or not cv2.isContourConvex(
-                    proyectadas.astype(np.float32)
-                )
+                or not cv2.isContourConvex(proyectadas.astype(np.float32))
                 or area < 100
                 or area > frame.shape[0] * frame.shape[1] * 0.90
             ):
                 continue
 
             poligono = np.int32(proyectadas)
-
-            cv2.polylines(
-                frame,
-                [poligono],
-                True,
-                (0, 255, 0),
-                3
-            )
+            cv2.polylines(frame, [poligono], True, (0, 255, 0), 3)
 
             porcentaje = calidad * 100
-
             x, y = poligono[0][0]
 
             cv2.putText(
@@ -206,9 +173,8 @@ while True:
             )
 
     # ---------------------------------
-    # DETECCION YOLO
+    # DETECCION Y ETIQUETADO YOLO
     # ---------------------------------
-
     resultados = modelo(
         frame,
         conf=0.50,
@@ -216,20 +182,17 @@ while True:
     )
 
     for resultado in resultados:
-
         for caja in resultado.boxes:
-
             x1, y1, x2, y2 = map(
                 int,
                 caja.xyxy[0].tolist()
             )
 
             confianza = float(caja.conf[0])
-
             clase_id = int(caja.cls[0])
-
             nombre_clase = modelo.names[clase_id]
 
+            # Dibuja el rectángulo de la detección
             cv2.rectangle(
                 frame,
                 (x1, y1),
@@ -238,9 +201,8 @@ while True:
                 2
             )
 
-            etiqueta = (
-                f"{nombre_clase} {confianza * 100:.1f}%"
-            )
+            # Etiqueta con el nombre de la clase y el porcentaje de confianza
+            etiqueta = f"{nombre_clase} {confianza * 100:.1f}%"
 
             cv2.putText(
                 frame,
@@ -255,13 +217,13 @@ while True:
     # ---------------------------------
     # MOSTRAR RESULTADO
     # ---------------------------------
-
     cv2.imshow(
-        "SISTEMA DE DETECCION MULTIPLE",
+        "SISTEMA DE DETECCION MULTIPLE - VIDEO",
         frame
     )
 
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    # Espera 25 ms por fotograma para simular una velocidad de reproducción normal
+    if cv2.waitKey(25) & 0xFF == ord("q"):
         break
 
 cap.release()
