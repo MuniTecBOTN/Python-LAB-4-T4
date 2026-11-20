@@ -5,7 +5,7 @@ import os
 
 TOTAL_OBJETOS = 3
 FORMATO_NOMBRES = "imagen_{}.jpg"
-ID_CAMARA = 0
+ID_CAMARA = 1
 VISTAS_POR_OBJETO = 4
 TOTAL_PLANTILLAS = TOTAL_OBJETOS * VISTAS_POR_OBJETO
 MIN_BUENOS_MATCHES = 12
@@ -76,6 +76,7 @@ def cargar_descriptores_plantillas():
             'id': (i - 1) // VISTAS_POR_OBJETO + 1
         })
         print(f"-> Vista {i} indexada para Objeto {(i - 1) // VISTAS_POR_OBJETO + 1}.")
+        cv2.imshow(f"Vista {i}")
     return datos_plantillas
 
 def clasificar_region(region, plantillas, orb, bf):

@@ -1,0 +1,1085 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentación técnica de YOLO</title>
+
+<style>
+:root {
+    --bg: #f5f7fa;
+    --white: #ffffff;
+    --text: #202938;
+    --muted: #64748b;
+    --border: #e2e8f0;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --green: #15803d;
+    --dark: #172033;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+    line-height: 1.65;
+}
+
+header {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 35px 20px;
+}
+
+.container {
+    max-width: 1050px;
+    margin: auto;
+    padding: 25px 20px;
+}
+
+h1 { font-size: 29px; margin: 8px 0; }
+h2 { font-size: 22px; margin-top: 35px; }
+h3 { font-size: 17px; margin-top: 25px; }
+
+p { margin: 9px 0; }
+
+.muted { color: var(--muted); }
+
+.tag {
+    color: var(--blue);
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 23px;
+    margin: 22px 0;
+}
+
+.code {
+    background: var(--dark);
+    color: #e5e7eb;
+    padding: 17px;
+    border-radius: 7px;
+    overflow-x: auto;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre;
+}
+
+pre { margin: 12px 0; }
+
+code {
+    background: #edf2f7;
+    color: #1d4ed8;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: Consolas, monospace;
+}
+
+.code code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+}
+
+.note {
+    background: var(--blue-bg);
+    border-left: 3px solid var(--blue);
+    padding: 13px 16px;
+    margin: 15px 0;
+    font-size: 14px;
+}
+
+.success {
+    background: #f0fdf4;
+    border-left: 3px solid var(--green);
+    padding: 13px 16px;
+    margin: 15px 0;
+    font-size: 14px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 14px;
+}
+
+td, th {
+    padding: 10px;
+    border: 1px solid var(--border);
+    text-align: left;
+    vertical-align: top;
+}
+
+th { background: #f1f5f9; }
+
+details {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 12px 15px;
+    margin: 10px 0;
+}
+
+summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+a { color: var(--blue); }
+
+footer {
+    text-align: center;
+    color: var(--muted);
+    padding: 25px;
+    font-size: 13px;
+}
+
+@media(max-width:650px) {
+    h1 { font-size: 23px; }
+    .card { padding: 16px; }
+    table { font-size: 12px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="container">
+    <div class="tag">Manual de consulta técnica</div>
+    <h1>Documentación de YOLO con Python</h1>
+    <p class="muted">
+        Fundamentos, métodos, parámetros y ejemplos para desarrollar
+        aplicaciones de visión artificial.
+    </p>
+</div>
+</header>
+
+<main class="container">
+
+<!-- 01 -->
+
+<section class="card">
+<div class="tag">01 · Introducción</div>
+<h2>¿Qué es YOLO?</h2>
+
+<p>
+YOLO (You Only Look Once) es una familia de modelos de visión
+artificial que permite detectar objetos en imágenes y videos.
+</p>
+
+<p>
+Su función principal es identificar qué objetos aparecen en una
+imagen y determinar en qué posición se encuentran.
+</p>
+
+<h3>¿Qué información proporciona?</h3>
+
+<ul>
+    <li>Nombre o clase del objeto.</li>
+    <li>Ubicación del objeto mediante un rectángulo.</li>
+    <li>Confianza de la predicción.</li>
+    <li>Coordenadas de cada detección.</li>
+</ul>
+
+<h3>Ejemplo de detección</h3>
+
+<p>
+Si presentamos una imagen que contiene una botella y un martillo,
+el modelo podría devolver:
+</p>
+
+<pre class="code"><code>Objeto: botella
+Confianza: 0.94
+Coordenadas: [120, 80, 250, 340]
+
+Objeto: martillo
+Confianza: 0.89
+Coordenadas: [300, 100, 480, 390]</code></pre>
+
+<div class="note">
+La confianza es una estimación del modelo sobre su predicción.
+No debe interpretarse como una garantía de que la detección
+sea correcta.
+</div>
+</section>
+
+<!-- 02 -->
+
+<section class="card">
+<div class="tag">02 · Tareas</div>
+<h2>¿Qué puede hacer YOLO?</h2>
+
+<h3>Detección de objetos (Detect)</h3>
+<p>
+Identifica objetos y dibuja rectángulos delimitadores alrededor
+de ellos. Es la tarea que utilizaremos en nuestros laboratorios.
+</p>
+
+<h3>Segmentación (Segment)</h3>
+<p>
+Identifica los objetos y determina los píxeles que pertenecen
+a cada uno mediante máscaras.
+</p>
+
+<h3>Clasificación (Classify)</h3>
+<p>
+Asigna una categoría a una imagen completa, sin localizar
+individualmente los objetos.
+</p>
+
+<h3>Estimación de pose (Pose)</h3>
+<p>
+Identifica puntos clave del cuerpo u otros elementos para
+estimar posiciones y movimientos.
+</p>
+
+<h3>Detección de cajas orientadas (OBB)</h3>
+<p>
+Localiza objetos utilizando rectángulos que pueden tener
+diferentes ángulos de rotación.
+</p>
+
+<table>
+<tr><th>Tarea</th><th>Resultado</th><th>Ejemplo</th></tr>
+<tr><td>Detect</td><td>Rectángulos</td><td>Reconocer herramientas</td></tr>
+<tr><td>Segment</td><td>Máscaras</td><td>Separar piezas</td></tr>
+<tr><td>Classify</td><td>Clases</td><td>Clasificar fotografías</td></tr>
+<tr><td>Pose</td><td>Puntos clave</td><td>Analizar movimientos</td></tr>
+<tr><td>OBB</td><td>Rectángulos rotados</td><td>Identificar piezas inclinadas</td></tr>
+</table>
+
+<div class="note">
+Los modelos deben corresponder a la tarea que se desea realizar.
+Un modelo de detección no produce automáticamente máscaras
+de segmentación.
+</div>
+</section>
+
+<!-- 03 -->
+
+<section class="card">
+<div class="tag">03 · Instalación</div>
+<h2>Preparar el entorno de trabajo</h2>
+
+<h3>Instalar Ultralytics</h3>
+
+<pre class="code"><code>pip install ultralytics</code></pre>
+
+<h3>Verificar la instalación</h3>
+
+<pre class="code"><code>from ultralytics import YOLO
+
+print("Biblioteca instalada correctamente")</code></pre>
+
+<h3>Bibliotecas complementarias</h3>
+
+<pre class="code"><code>pip install opencv-python
+pip install numpy
+pip install matplotlib
+pip install pillow</code></pre>
+
+<table>
+<tr><th>Biblioteca</th><th>Uso</th></tr>
+<tr><td>ultralytics</td><td>Cargar, entrenar y utilizar YOLO.</td></tr>
+<tr><td>opencv-python</td><td>Capturar y procesar imágenes y videos.</td></tr>
+<tr><td>numpy</td><td>Manipular matrices de imágenes.</td></tr>
+<tr><td>matplotlib</td><td>Mostrar gráficos y resultados.</td></tr>
+<tr><td>pillow</td><td>Leer y manipular imágenes.</td></tr>
+</table>
+
+<h3>Importar YOLO</h3>
+
+<pre class="code"><code>from ultralytics import YOLO</code></pre>
+
+<p>
+La clase YOLO proporciona los métodos necesarios para
+trabajar con los modelos.
+</p>
+</section>
+
+<!-- 04 -->
+
+<section class="card">
+<div class="tag">04 · Modelos</div>
+<h2>Tipos de modelos y archivos</h2>
+
+<p>
+Los modelos de Ultralytics pueden cargarse desde diferentes
+archivos según el propósito del proyecto.
+</p>
+
+<table>
+<tr><th>Archivo</th><th>Función</th></tr>
+<tr><td>.pt</td><td>Pesos de un modelo de PyTorch.</td></tr>
+<tr><td>.yaml</td><td>Configuración de la arquitectura.</td></tr>
+<tr><td>.onnx</td><td>Modelo exportado para otros entornos.</td></tr>
+<tr><td>.engine</td><td>Motor optimizado de TensorRT.</td></tr>
+<tr><td>.tflite</td><td>Formato TensorFlow Lite, según compatibilidad.</td></tr>
+</table>
+
+<h3>Variantes de modelos</h3>
+
+<p>
+En una familia de modelos como YOLO26 existen diferentes
+tamaños para equilibrar velocidad, recursos y precisión.
+</p>
+
+<table>
+<tr><th>Variante</th><th>Característica general</th></tr>
+<tr><td>n (Nano)</td><td>Más ligera y rápida.</td></tr>
+<tr><td>s (Small)</td><td>Ligera con mayor capacidad.</td></tr>
+<tr><td>m (Medium)</td><td>Equilibrio entre tamaño y capacidad.</td></tr>
+<tr><td>l (Large)</td><td>Mayor capacidad computacional.</td></tr>
+<tr><td>x (Extra Large)</td><td>Modelo de mayor tamaño.</td></tr>
+</table>
+
+<h3>Cargar un modelo preentrenado</h3>
+
+<pre class="code"><code>model = YOLO("yolo26n.pt")</code></pre>
+
+<h3>Cargar un modelo personalizado</h3>
+
+<pre class="code"><code>model = YOLO("best.pt")</code></pre>
+
+<h3>Crear un modelo desde su arquitectura</h3>
+
+<pre class="code"><code>model = YOLO("yolo26n.yaml")</code></pre>
+
+<div class="note">
+Para aprender a entrenar objetos propios, normalmente se
+recomienda comenzar desde pesos preentrenados (.pt), en lugar
+de inicializar todos los pesos aleatoriamente.
+</div>
+</section>
+
+<!-- 05 -->
+
+<section class="card">
+<div class="tag">05 · Datos</div>
+<h2>Conjuntos de datos (Dataset)</h2>
+
+<p>
+Un dataset es un conjunto organizado de imágenes y etiquetas
+que permite entrenar y evaluar un modelo.
+</p>
+
+<h3>Distribución de imágenes</h3>
+
+<table>
+<tr><th>Grupo</th><th>Uso</th></tr>
+<tr><td>Train</td><td>Enseñar al modelo.</td></tr>
+<tr><td>Validation</td><td>Medir su comportamiento durante el desarrollo.</td></tr>
+<tr><td>Test</td><td>Evaluar el modelo con datos reservados.</td></tr>
+</table>
+
+<h3>Ejemplo de estructura</h3>
+
+<pre class="code"><code>dataset/
+│
+├── data.yaml
+│
+├── train/
+│   ├── images/
+│   └── labels/
+│
+├── valid/
+│   ├── images/
+│   └── labels/
+│
+└── test/
+    ├── images/
+    └── labels/</code></pre>
+
+<h3>Formato de las etiquetas</h3>
+
+<p>
+En detección, cada imagen puede tener un archivo TXT asociado.
+Cada línea representa un objeto.
+</p>
+
+<pre class="code"><code>0 0.500 0.450 0.300 0.400
+1 0.700 0.600 0.200 0.250</code></pre>
+
+<table>
+<tr><th>Campo</th><th>Descripción</th></tr>
+<tr><td>0</td><td>Identificador de clase.</td></tr>
+<tr><td>0.500</td><td>Centro horizontal normalizado.</td></tr>
+<tr><td>0.450</td><td>Centro vertical normalizado.</td></tr>
+<tr><td>0.300</td><td>Ancho normalizado.</td></tr>
+<tr><td>0.400</td><td>Alto normalizado.</td></tr>
+</table>
+
+<h3>Archivo data.yaml</h3>
+
+<pre class="code"><code>path: ./dataset
+
+train: train/images
+val: valid/images
+test: test/images
+
+names:
+  0: botella
+  1: lata
+  2: martillo</code></pre>
+
+<p>
+Este archivo conecta las imágenes del dataset con los nombres
+de las clases.
+</p>
+
+<h3>Recomendaciones para etiquetar</h3>
+
+<ul>
+    <li>Marcar completamente cada objeto.</li>
+    <li>No incluir demasiado fondo en los rectángulos.</li>
+    <li>Mantener las clases consistentes.</li>
+    <li>Evitar imágenes borrosas o etiquetas incorrectas.</li>
+    <li>Incluir diferentes posiciones y condiciones.</li>
+    <li>Reservar imágenes independientes para la evaluación.</li>
+</ul>
+</section>
+
+<!-- 06 -->
+
+<section class="card">
+<div class="tag">06 · Entrenamiento</div>
+<h2>Método train()</h2>
+
+<p>
+Permite entrenar un modelo utilizando un conjunto de datos
+y diferentes parámetros de configuración.
+</p>
+
+<h3>Sintaxis general</h3>
+
+<pre class="code"><code>resultados = model.train(
+    data="dataset/data.yaml",
+    epochs=100,
+    imgsz=640,
+    batch=8
+)</code></pre>
+
+<h3>Parámetros principales</h3>
+
+<table>
+<tr><th>Argumento</th><th>Descripción</th><th>Ejemplo</th></tr>
+<tr><td>data</td><td>Ruta del dataset YAML.</td><td>"data.yaml"</td></tr>
+<tr><td>epochs</td><td>Número de épocas.</td><td>100</td></tr>
+<tr><td>imgsz</td><td>Tamaño de imagen.</td><td>640</td></tr>
+<tr><td>batch</td><td>Tamaño del lote.</td><td>8</td></tr>
+<tr><td>device</td><td>CPU o GPU.</td><td>"cpu", 0</td></tr>
+<tr><td>workers</td><td>Procesos para cargar datos.</td><td>4</td></tr>
+<tr><td>name</td><td>Nombre del experimento.</td><td>"mi_modelo"</td></tr>
+<tr><td>project</td><td>Carpeta principal de resultados.</td><td>"resultados"</td></tr>
+<tr><td>patience</td><td>Paciencia para detener anticipadamente.</td><td>20</td></tr>
+<tr><td>pretrained</td><td>Utilizar pesos preentrenados.</td><td>True</td></tr>
+<tr><td>optimizer</td><td>Optimizador.</td><td>"auto", "SGD", "AdamW"</td></tr>
+<tr><td>lr0</td><td>Tasa inicial de aprendizaje.</td><td>0.01</td></tr>
+<tr><td>weight_decay</td><td>Regularización.</td><td>0.0005</td></tr>
+<tr><td>seed</td><td>Semilla para reproducibilidad.</td><td>42</td></tr>
+</table>
+
+<h3>Argumentos de aumentación</h3>
+
+<table>
+<tr><th>Argumento</th><th>Función</th></tr>
+<tr><td>degrees</td><td>Rotación aleatoria.</td></tr>
+<tr><td>translate</td><td>Traslación de imágenes.</td></tr>
+<tr><td>scale</td><td>Variación de escala.</td></tr>
+<tr><td>fliplr</td><td>Volteo horizontal.</td></tr>
+<tr><td>flipud</td><td>Volteo vertical.</td></tr>
+<tr><td>mosaic</td><td>Aumentación combinando imágenes.</td></tr>
+<tr><td>mixup</td><td>Mezcla de imágenes.</td></tr>
+<tr><td>hsv_h</td><td>Variación de tono.</td></tr>
+<tr><td>hsv_s</td><td>Variación de saturación.</td></tr>
+<tr><td>hsv_v</td><td>Variación de brillo.</td></tr>
+</table>
+
+<div class="note">
+Los valores de estos parámetros son configurables. No todos
+son necesarios en un mismo entrenamiento. Conviene experimentar
+de forma controlada y observar los resultados.
+</div>
+
+<h3>Ejemplo de entrenamiento avanzado</h3>
+
+<pre class="code"><code>from ultralytics import YOLO
+
+model = YOLO("yolo26n.pt")
+
+model.train(
+    data="dataset/data.yaml",
+    epochs=100,
+    imgsz=640,
+    batch=8,
+    patience=25,
+    optimizer="auto",
+    degrees=10,
+    fliplr=0.5,
+    mosaic=1.0,
+    name="experimento_01"
+)</code></pre>
+
+<h3>¿Qué es una época?</h3>
+
+<p>
+Una época representa un recorrido completo por el conjunto
+de entrenamiento. Por ejemplo, con 100 épocas el modelo
+procesará el conjunto de entrenamiento hasta 100 veces,
+salvo que se detenga anticipadamente.
+</p>
+
+<h3>¿Qué es batch?</h3>
+
+<p>
+Es la cantidad de imágenes que se procesan en cada lote.
+Un batch mayor puede requerir más memoria.
+</p>
+
+<h3>¿Qué es imgsz?</h3>
+
+<p>
+Es el tamaño de entrada utilizado para procesar las imágenes.
+Una resolución mayor puede ayudar con objetos pequeños,
+pero requiere más recursos computacionales.
+</p>
+</section>
+
+<!-- 07 -->
+
+<section class="card">
+<div class="tag">07 · Validación</div>
+<h2>Método val()</h2>
+
+<p>
+Permite evaluar el modelo con un conjunto de validación
+para medir su capacidad de reconocer los objetos.
+</p>
+
+<pre class="code"><code>from ultralytics import YOLO
+
+model = YOLO("best.pt")
+
+metricas = model.val()
+
+print("mAP50:", metricas.box.map50)
+print("mAP50-95:", metricas.box.map)
+print("Precision:", metricas.box.mp)
+print("Recall:", metricas.box.mr)</code></pre>
+
+<h3>Principales métricas</h3>
+
+<table>
+<tr><th>Métrica</th><th>Interpretación</th></tr>
+<tr>
+<td>Precision</td>
+<td>Proporción de detecciones positivas que fueron correctas.</td>
+</tr>
+<tr>
+<td>Recall</td>
+<td>Proporción de objetos reales que fueron detectados.</td>
+</tr>
+<tr>
+<td>mAP50</td>
+<td>Precisión media con IoU de 0.50.</td>
+</tr>
+<tr>
+<td>mAP50-95</td>
+<td>Promedio de precisión media con IoU entre 0.50 y 0.95.</td>
+</tr>
+</table>
+
+<h3>Ejemplo de interpretación</h3>
+
+<p>
+Un modelo puede tener una precisión elevada, pero un recall
+bajo. Esto significa que las detecciones que realiza suelen
+ser correctas, pero puede estar dejando pasar muchos objetos.
+</p>
+
+<div class="note">
+No existe un valor universal que garantice un buen modelo.
+Las métricas deben interpretarse según el problema y las
+condiciones reales de funcionamiento.
+</div>
+</section>
+
+<!-- 08 -->
+
+<section class="card">
+<div class="tag">08 · Predicción</div>
+<h2>Método predict()</h2>
+
+<p>
+Permite utilizar un modelo entrenado para detectar objetos
+en imágenes, videos, carpetas o cámaras.
+</p>
+
+<h3>Detectar en una imagen</h3>
+
+<pre class="code"><code>from ultralytics import YOLO
+
+model = YOLO("best.pt")
+
+results = model.predict(
+    source="imagen.jpg",
+    conf=0.50,
+    save=True
+)</code></pre>
+
+<h3>Detectar en una carpeta</h3>
+
+<pre class="code"><code>results = model.predict(
+    source="imagenes/",
+    conf=0.40,
+    save=True
+)</code></pre>
+
+<h3>Detectar en un video</h3>
+
+<pre class="code"><code>results = model.predict(
+    source="video.mp4",
+    conf=0.50,
+    save=True
+)</code></pre>
+
+<h3>Detectar con cámara web</h3>
+
+<pre class="code"><code>results = model.predict(
+    source=0,
+    conf=0.50,
+    show=True
+)</code></pre>
+
+<h3>Parámetros principales</h3>
+
+<table>
+<tr><th>Argumento</th><th>Descripción</th></tr>
+<tr><td>source</td><td>Origen de la imagen o video.</td></tr>
+<tr><td>conf</td><td>Confianza mínima de detección.</td></tr>
+<tr><td>iou</td><td>Umbral IoU para supresión de cajas duplicadas.</td></tr>
+<tr><td>imgsz</td><td>Resolución de entrada.</td></tr>
+<tr><td>show</td><td>Mostrar resultados.</td></tr>
+<tr><td>save</td><td>Guardar imágenes o videos procesados.</td></tr>
+<tr><td>save_txt</td><td>Guardar detecciones en archivos TXT.</td></tr>
+<tr><td>save_conf</td><td>Incluir confianza en los TXT guardados.</td></tr>
+<tr><td>classes</td><td>Filtrar por identificadores de clase.</td></tr>
+<tr><td>max_det</td><td>Máximo de detecciones por imagen.</td></tr>
+<tr><td>device</td><td>Dispositivo de inferencia.</td></tr>
+<tr><td>stream</td><td>Procesar resultados como generador.</td></tr>
+<tr><td>verbose</td><td>Mostrar información detallada.</td></tr>
+</table>
+
+<h3>¿Qué significa conf?</h3>
+
+<p>
+El argumento conf establece la confianza mínima necesaria
+para mostrar una detección.
+</p>
+
+<pre class="code"><code># Mostrar detecciones con confianza >= 0.25
+model.predict(source="imagen.jpg", conf=0.25)
+
+# Mostrar detecciones con confianza >= 0.70
+model.predict(source="imagen.jpg", conf=0.70)</code></pre>
+
+<div class="note">
+Aumentar conf puede eliminar detecciones incorrectas, pero
+también puede hacer que desaparezcan objetos que sí existen.
+</div>
+
+<h3>¿Qué significa IoU?</h3>
+
+<p>
+IoU (Intersection over Union) mide el grado de superposición
+entre dos rectángulos.
+</p>
+
+<p>
+Se utiliza en la evaluación de detecciones y en la eliminación
+de cajas duplicadas mediante NMS.
+</p>
+
+<pre class="code"><code>model.predict(
+    source="imagen.jpg",
+    conf=0.40,
+    iou=0.50
+)</code></pre>
+</section>
+
+<!-- 09 -->
+
+<section class="card">
+<div class="tag">09 · Resultados</div>
+<h2>Interpretar los resultados de predict()</h2>
+
+<p>
+El método predict() devuelve una lista de objetos Results.
+Cada elemento representa el resultado correspondiente
+a una imagen o fotograma procesado.
+</p>
+
+<h3>Recorrer las detecciones</h3>
+
+<pre class="code"><code>results = model.predict("imagen.jpg")
+
+for resultado in results:
+
+    for caja in resultado.boxes:
+
+        clase = int(caja.cls[0])
+        confianza = float(caja.conf[0])
+
+        nombre = resultado.names[clase]
+
+        print(nombre, confianza)</code></pre>
+
+<h3>Información de cada caja</h3>
+
+<table>
+<tr><th>Propiedad</th><th>Descripción</th></tr>
+<tr><td>boxes</td><td>Contenedor de las detecciones.</td></tr>
+<tr><td>boxes.cls</td><td>Identificador de clase.</td></tr>
+<tr><td>boxes.conf</td><td>Confianza de cada detección.</td></tr>
+<tr><td>boxes.xyxy</td><td>Coordenadas x1, y1, x2, y2.</td></tr>
+<tr><td>boxes.xywh</td><td>Centro x, centro y, ancho y alto.</td></tr>
+<tr><td>names</td><td>Diccionario de nombres de clases.</td></tr>
+<tr><td>orig_shape</td><td>Dimensiones originales de la imagen.</td></tr>
+</table>
+
+<h3>Obtener coordenadas</h3>
+
+<pre class="code"><code>for resultado in results:
+
+    for caja in resultado.boxes:
+
+        x1, y1, x2, y2 = caja.xyxy[0].tolist()
+
+        print("X inicial:", x1)
+        print("Y inicial:", y1)
+        print("X final:", x2)
+        print("Y final:", y2)</code></pre>
+
+<h3>Obtener la imagen con las detecciones</h3>
+
+<pre class="code"><code>for resultado in results:
+
+    imagen = resultado.plot()</code></pre>
+
+<p>
+El método plot() devuelve una imagen con los rectángulos,
+etiquetas y valores de confianza dibujados.
+</p>
+
+<h3>Filtrar por clase</h3>
+
+<pre class="code"><code># Detectar únicamente las clases 0 y 2
+
+results = model.predict(
+    source="imagen.jpg",
+    classes=[0, 2]
+)</code></pre>
+</section>
+
+<!-- 10 -->
+
+<section class="card">
+<div class="tag">10 · Otros métodos</div>
+<h2>Métodos adicionales</h2>
+
+<h3>track()</h3>
+
+<p>
+Realiza seguimiento de objetos a través de diferentes
+fotogramas de un video.
+</p>
+
+<pre class="code"><code>results = model.track(
+    source=0,
+    show=True,
+    tracker="bytetrack.yaml"
+)</code></pre>
+
+<p>
+A diferencia de predict(), el seguimiento intenta conservar
+un identificador para cada objeto a través del tiempo.
+</p>
+
+<h3>export()</h3>
+
+<p>
+Convierte el modelo a otro formato para facilitar su utilización
+en diferentes plataformas.
+</p>
+
+<pre class="code"><code>model.export(format="onnx")</code></pre>
+
+<p>Algunos formatos disponibles:</p>
+
+<ul>
+    <li>onnx</li>
+    <li>openvino</li>
+    <li>engine</li>
+    <li>torchscript</li>
+    <li>tflite</li>
+    <li>coreml</li>
+</ul>
+
+<h3>benchmark()</h3>
+
+<p>
+Permite comparar el rendimiento de diferentes formatos
+de exportación.
+</p>
+
+<pre class="code"><code>from ultralytics.utils.benchmarks import benchmark
+
+benchmark(
+    model="best.pt",
+    data="dataset/data.yaml",
+    imgsz=640
+)</code></pre>
+
+<h3>resume()</h3>
+
+<p>
+El entrenamiento puede reanudarse utilizando el último
+punto de control compatible.
+</p>
+
+<pre class="code"><code>model = YOLO("last.pt")
+
+model.train(resume=True)</code></pre>
+
+<div class="note">
+Para reanudar correctamente un entrenamiento interrumpido,
+se utiliza el checkpoint last.pt, no best.pt.
+</div>
+</section>
+
+<!-- 11 -->
+
+<section class="card">
+<div class="tag">11 · Flujo de trabajo</div>
+<h2>Proceso completo de desarrollo</h2>
+
+<pre class="code"><code>1. Recolectar imágenes
+          |
+          v
+2. Etiquetar objetos
+          |
+          v
+3. Crear dataset
+          |
+          v
+4. Configurar data.yaml
+          |
+          v
+5. Cargar modelo YOLO
+          |
+          v
+6. Entrenar con train()
+          |
+          v
+7. Evaluar con val()
+          |
+          v
+8. Cargar best.pt
+          |
+          v
+9. Realizar detecciones
+          |
+          v
+10. Mejorar el dataset
+          |
+          v
+11. Reentrenar si es necesario</code></pre>
+
+<h3>Archivos generados</h3>
+
+<pre class="code"><code>runs/
+└── detect/
+    └── mi_modelo/
+        ├── weights/
+        │   ├── best.pt
+        │   └── last.pt
+        │
+        ├── results.csv
+        ├── results.png
+        ├── confusion_matrix.png
+        ├── PR_curve.png
+        └── F1_curve.png</code></pre>
+
+<p>
+Los archivos de resultados permiten analizar el comportamiento
+del modelo durante el entrenamiento y la validación.
+</p>
+</section>
+
+<!-- 12 -->
+
+<section class="card">
+<div class="tag">12 · Problemas frecuentes</div>
+<h2>Errores y posibles soluciones</h2>
+
+<details>
+<summary>YOLO no encuentra el archivo data.yaml</summary>
+<p>
+Verificar la ruta especificada en el argumento data y comprobar
+que el archivo exista.
+</p>
+</details>
+
+<details>
+<summary>El modelo no reconoce mis objetos</summary>
+<p>
+Verificar las etiquetas, aumentar la variedad de imágenes y
+comprobar que las clases estén correctamente configuradas.
+</p>
+</details>
+
+<details>
+<summary>El entrenamiento consume demasiada memoria</summary>
+<p>
+Reducir batch, utilizar una variante más ligera o disminuir
+imgsz.
+</p>
+</details>
+
+<details>
+<summary>El modelo confunde dos objetos</summary>
+<p>
+Agregar imágenes variadas de ambas clases y verificar que
+las etiquetas sean correctas.
+</p>
+</details>
+
+<details>
+<summary>El modelo detecta objetos que no existen</summary>
+<p>
+Revisar la calidad del dataset y experimentar con el valor
+de conf. También es importante probar imágenes de escenarios
+diferentes.
+</p>
+</details>
+
+<details>
+<summary>La cámara web no funciona</summary>
+<p>
+Verificar el índice de cámara, los permisos del sistema
+y que otra aplicación no esté utilizando el dispositivo.
+</p>
+</details>
+
+<details>
+<summary>No aparece la GPU</summary>
+<p>
+Comprobar la instalación de PyTorch, los controladores y
+la compatibilidad de CUDA con el entorno instalado.
+</p>
+</details>
+
+</section>
+
+<!-- 13 -->
+
+<section class="card">
+<div class="tag">13 · Recomendaciones</div>
+<h2>Buenas prácticas</h2>
+
+<ul>
+    <li>Utilizar imágenes de buena calidad.</li>
+    <li>Etiquetar correctamente todos los objetos relevantes.</li>
+    <li>Evitar clases con nombres o identificadores inconsistentes.</li>
+    <li>Separar adecuadamente train, valid y test.</li>
+    <li>Conservar los mejores pesos del entrenamiento.</li>
+    <li>Evaluar con imágenes que el modelo no haya visto.</li>
+    <li>Modificar un parámetro a la vez para comparar resultados.</li>
+    <li>Documentar los cambios entre entrenamientos.</li>
+</ul>
+
+<h3>Una consideración importante</h3>
+
+<p>
+Un modelo personalizado no aprende automáticamente nuevas clases
+cuando se le presenta un objeto desconocido.
+</p>
+
+<p>
+Para reconocer nuevas categorías se debe preparar un conjunto
+de imágenes que las represente, etiquetarlas y entrenar o ajustar
+el modelo.
+</p>
+
+<div class="success">
+El modelo best.pt puede integrarse posteriormente en sistemas
+de inspección, clasificación de piezas, bandas transportadoras,
+robótica y aplicaciones de visión artificial.
+</div>
+</section>
+
+<!-- REFERENCIAS -->
+
+<section class="card">
+<div class="tag">14 · Recursos oficiales</div>
+<h2>Documentación y consulta</h2>
+
+<p>Consultar estas fuentes para ampliar la información:</p>
+
+<ul>
+<li>
+<a href="https://docs.ultralytics.com/es/"
+target="_blank">Documentación oficial de Ultralytics</a>
+</li>
+<li>
+<a href="https://docs.ultralytics.com/es/usage/python/"
+target="_blank">Uso de YOLO con Python</a>
+</li>
+<li>
+<a href="https://docs.ultralytics.com/es/modes/train/"
+target="_blank">Modo de entrenamiento</a>
+</li>
+<li>
+<a href="https://docs.ultralytics.com/es/modes/predict/"
+target="_blank">Modo de predicción</a>
+</li>
+<li>
+<a href="https://docs.ultralytics.com/es/modes/val/"
+target="_blank">Modo de validación</a>
+</li>
+<li>
+<a href="https://docs.ultralytics.com/es/usage/cfg/"
+target="_blank">Configuración y argumentos</a>
+</li>
+<li>
+<a href="https://docs.ultralytics.com/es/datasets/detect/"
+target="_blank">Conjuntos de datos de detección</a>
+</li>
+<li>
+<a href="https://roboflow.com/"
+target="_blank">Roboflow: etiquetado de imágenes</a>
+</li>
+</ul>
+</section>
+
+</main>
+
+<footer>
+Documentación de consulta · Visión artificial · Python y Ultralytics YOLO
+</footer>
+
+</body>
+</html>
