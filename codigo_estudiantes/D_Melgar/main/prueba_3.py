@@ -27,7 +27,7 @@ CAMERA_FPS_SOLICITADOS = 30
 FRECUENCIA_DESCONOCIDOS = 3  # segmentacion menos frecuente; ORB sigue cada frame
 
 # Mantener la calidad inicial de ORB para no reducir deliberadamente la deteccion.
-ORB_FEATURES = 1600
+ORB_FEATURES = 1500
 MIN_MATCHES = 10
 MIN_INLIERS = 7
 MIN_INLIER_RATIO = 0.32
@@ -53,9 +53,7 @@ clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
 orb = cv2.ORB_create(
     nfeatures=ORB_FEATURES,
     scaleFactor=1.2,
-    nlevels=8,
-    edgeThreshold=19,
-    fastThreshold=12,
+    nlevels=10
 )
 matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
 
