@@ -1,0 +1,1090 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Laboratorios de entrenamiento YOLO</title>
+
+<style>
+:root {
+    --fondo: #f5f7fa;
+    --blanco: #ffffff;
+    --texto: #202938;
+    --secundario: #64748b;
+    --borde: #e2e8f0;
+    --azul: #2563eb;
+    --azul-claro: #eff6ff;
+    --verde: #15803d;
+    --codigo: #172033;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: Arial, Helvetica, sans-serif;
+    line-height: 1.6;
+}
+
+header {
+    background: var(--blanco);
+    border-bottom: 1px solid var(--borde);
+    padding: 35px 20px;
+}
+
+.contenedor {
+    max-width: 1050px;
+    margin: auto;
+    padding: 25px 20px;
+}
+
+h1, h2, h3 {
+    line-height: 1.3;
+}
+
+h1 {
+    font-size: 28px;
+    margin-bottom: 8px;
+}
+
+h2 {
+    font-size: 22px;
+    margin-top: 35px;
+}
+
+h3 {
+    font-size: 17px;
+}
+
+p {
+    margin: 9px 0;
+}
+
+.subtitulo {
+    color: var(--secundario);
+}
+
+.laboratorio {
+    background: var(--blanco);
+    border: 1px solid var(--borde);
+    border-radius: 10px;
+    padding: 24px;
+    margin: 25px 0;
+}
+
+.numero {
+    color: var(--azul);
+    font-weight: bold;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.codigo {
+    background: var(--codigo);
+    color: #e5e7eb;
+    padding: 18px;
+    border-radius: 8px;
+    overflow-x: auto;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre;
+}
+
+pre {
+    margin: 12px 0;
+}
+
+code {
+    font-family: Consolas, monospace;
+    background: #edf2f7;
+    padding: 2px 5px;
+    border-radius: 4px;
+    color: #1d4ed8;
+}
+
+.codigo code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+}
+
+.nota {
+    padding: 13px 16px;
+    background: var(--azul-claro);
+    border-left: 3px solid var(--azul);
+    margin: 15px 0;
+    font-size: 14px;
+}
+
+.exito {
+    padding: 13px 16px;
+    background: #f0fdf4;
+    border-left: 3px solid var(--verde);
+    margin: 15px 0;
+    font-size: 14px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 14px;
+}
+
+th, td {
+    border: 1px solid var(--borde);
+    padding: 10px;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    background: #f1f5f9;
+}
+
+details {
+    border: 1px solid var(--borde);
+    border-radius: 7px;
+    margin: 12px 0;
+    padding: 12px 15px;
+    background: #fff;
+}
+
+summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.paso {
+    border-bottom: 1px solid var(--borde);
+    padding: 10px 0;
+}
+
+footer {
+    padding: 25px;
+    text-align: center;
+    color: var(--secundario);
+    font-size: 13px;
+}
+
+@media(max-width:650px) {
+    h1 { font-size: 23px; }
+    .laboratorio { padding: 16px; }
+    table { font-size: 12px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="contenedor">
+        <div class="numero">Prácticas de visión artificial</div>
+        <h1>Entrenamiento de modelos personalizados con YOLO</h1>
+        <p class="subtitulo">
+            Aprender a etiquetar imágenes, entrenar modelos y reconocer
+            objetos propios utilizando Python.
+        </p>
+    </div>
+</header>
+
+<main class="contenedor">
+
+<section>
+    <h2>Objetivo general</h2>
+    <p>
+        Desarrollar modelos de detección de objetos utilizando imágenes
+        etiquetadas por el estudiante, comprendiendo el proceso de
+        preparación de datos, entrenamiento, evaluación y predicción.
+    </p>
+
+    <h3>Herramientas necesarias</h3>
+    <ul>
+        <li>Python 3.10 o superior.</li>
+        <li>Visual Studio Code o Google Colab.</li>
+        <li>Ultralytics YOLO.</li>
+        <li>Roboflow para etiquetar imágenes (opcional).</li>
+    </ul>
+
+    <h3>Instalación</h3>
+    <pre class="codigo"><code>pip install ultralytics</code></pre>
+
+    <p>
+        Para verificar la instalación:
+    </p>
+    <pre class="codigo"><code>from ultralytics import YOLO
+
+print("YOLO instalado correctamente")</code></pre>
+</section>
+
+<!-- LABORATORIO 1 -->
+
+<section class="laboratorio">
+
+<div class="numero">Laboratorio 01</div>
+<h2>Entrenamiento con imágenes etiquetadas</h2>
+
+<p>
+    En este laboratorio se utilizará un conjunto de imágenes
+    previamente etiquetadas para entrenar un modelo capaz de
+    reconocer dos tipos de objetos.
+</p>
+
+<h3>1. Planteamiento</h3>
+<p>
+    Se desea crear un detector que reconozca dos objetos diferentes.
+    Por ejemplo:
+</p>
+
+<ul>
+    <li>Botella.</li>
+    <li>Lata.</li>
+</ul>
+
+<p>
+    El modelo deberá aprender a identificar ambos objetos y
+    dibujar un rectángulo alrededor de ellos.
+</p>
+
+<h3>2. Conseguir imágenes etiquetadas</h3>
+
+<p>
+    Se puede utilizar <strong>Roboflow</strong> para crear un conjunto
+    de datos:
+</p>
+
+<ol>
+    <li>Crear una cuenta en Roboflow.</li>
+    <li>Crear un proyecto de tipo Object Detection.</li>
+    <li>Subir fotografías de botellas y latas.</li>
+    <li>Etiquetar cada objeto dibujando un rectángulo.</li>
+    <li>Asignar la clase correspondiente.</li>
+    <li>Generar el conjunto de datos y exportarlo en formato YOLO.</li>
+</ol>
+
+<p>
+    Se recomienda utilizar al menos 50 imágenes por clase para
+    comenzar con la práctica. Una mayor variedad de imágenes
+    permitirá trabajar con mejores condiciones de entrenamiento.
+</p>
+
+<div class="nota">
+    Importante: las imágenes deben contener diferentes posiciones,
+    distancias, fondos e iluminaciones. No es suficiente fotografiar
+    repetidamente el mismo objeto desde una única posición.
+</div>
+
+<h3>3. Comprender las etiquetas YOLO</h3>
+
+<p>
+    Cada imagen tiene un archivo de texto asociado con el mismo nombre.
+    Por ejemplo:
+</p>
+
+<pre class="codigo"><code>botella_01.jpg
+botella_01.txt</code></pre>
+
+<p>
+    El archivo TXT contiene una línea por cada objeto etiquetado.
+    Cada línea tiene cinco valores:
+</p>
+
+<pre class="codigo"><code>0 0.512 0.483 0.320 0.450</code></pre>
+
+<table>
+    <tr>
+        <th>Valor</th>
+        <th>Significado</th>
+    </tr>
+    <tr>
+        <td>0</td>
+        <td>Identificador de la clase.</td>
+    </tr>
+    <tr>
+        <td>0.512</td>
+        <td>Centro horizontal del rectángulo.</td>
+    </tr>
+    <tr>
+        <td>0.483</td>
+        <td>Centro vertical del rectángulo.</td>
+    </tr>
+    <tr>
+        <td>0.320</td>
+        <td>Ancho del rectángulo.</td>
+    </tr>
+    <tr>
+        <td>0.450</td>
+        <td>Alto del rectángulo.</td>
+    </tr>
+</table>
+
+<div class="nota">
+    Las coordenadas están normalizadas entre 0 y 1.
+    El identificador de clase comienza en cero.
+</div>
+
+<h3>4. Estructura del conjunto de datos</h3>
+
+<p>
+    Al exportar el proyecto, se debe obtener una estructura similar
+    a la siguiente:
+</p>
+
+<pre class="codigo"><code>dataset/
+│
+├── data.yaml
+│
+├── train/
+│   ├── images/
+│   └── labels/
+│
+├── valid/
+│   ├── images/
+│   └── labels/
+│
+└── test/
+    ├── images/
+    └── labels/</code></pre>
+
+<p>
+    Cada carpeta tiene una finalidad:
+</p>
+
+<ul>
+    <li><strong>train:</strong> imágenes utilizadas para aprender.</li>
+    <li><strong>valid:</strong> imágenes para evaluar durante el entrenamiento.</li>
+    <li><strong>test:</strong> imágenes reservadas para una evaluación final.</li>
+</ul>
+
+<h3>5. Archivo de configuración data.yaml</h3>
+
+<p>
+    Este archivo indica dónde están las imágenes y cuáles son
+    las clases que reconocerá el modelo.
+</p>
+
+<pre class="codigo"><code>path: ./dataset
+
+train: train/images
+val: valid/images
+test: test/images
+
+names:
+  0: botella
+  1: lata</code></pre>
+
+<h3>6. Código completo de entrenamiento</h3>
+
+<p>
+    Crear un archivo llamado <strong>entrenamiento_01.py</strong>.
+</p>
+
+<pre class="codigo"><code># ==========================================
+# LABORATORIO 01
+# Entrenamiento de un modelo YOLO
+# ==========================================
+
+from ultralytics import YOLO
+
+# 1. Cargar modelo preentrenado
+model = YOLO("yolo26n.pt")
+
+# 2. Entrenar el modelo
+resultados = model.train(
+    data="dataset/data.yaml",
+    epochs=50,
+    imgsz=640,
+    batch=8,
+    name="detector_botellas_latas"
+)
+
+print("Entrenamiento finalizado")</code></pre>
+
+<h3>7. Explicación del código</h3>
+
+<div class="paso">
+    <strong>Importación de YOLO</strong>
+    <pre class="codigo"><code>from ultralytics import YOLO</code></pre>
+    Permite utilizar las herramientas de entrenamiento y detección
+    de objetos de Ultralytics.
+</div>
+
+<div class="paso">
+    <strong>Cargar el modelo</strong>
+    <pre class="codigo"><code>model = YOLO("yolo26n.pt")</code></pre>
+    Carga un modelo preentrenado. La variante n (nano) es una opción
+    ligera para comenzar.
+
+    El modelo ya conoce características visuales generales y
+    podrá adaptarlas a las clases de nuestro conjunto de datos.
+</div>
+
+<div class="paso">
+    <strong>Entrenar el modelo</strong>
+    <pre class="codigo"><code>resultados = model.train(
+    data="dataset/data.yaml",
+    epochs=50,
+    imgsz=640,
+    batch=8,
+    name="detector_botellas_latas"
+)</code></pre>
+
+    <p>
+        El método <code>train()</code> realiza el entrenamiento
+        utilizando las imágenes y etiquetas proporcionadas.
+    </p>
+</div>
+
+<h3>8. Argumentos del método train()</h3>
+
+<table>
+    <tr>
+        <th>Argumento</th>
+        <th>Función</th>
+        <th>Ejemplo</th>
+    </tr>
+    <tr>
+        <td>data</td>
+        <td>Ruta del archivo de configuración.</td>
+        <td>data.yaml</td>
+    </tr>
+    <tr>
+        <td>epochs</td>
+        <td>Número de épocas de entrenamiento.</td>
+        <td>50, 100, 200</td>
+    </tr>
+    <tr>
+        <td>imgsz</td>
+        <td>Tamaño de entrada de las imágenes.</td>
+        <td>640, 416, 320</td>
+    </tr>
+    <tr>
+        <td>batch</td>
+        <td>Imágenes procesadas por lote.</td>
+        <td>8, 16, 32</td>
+    </tr>
+    <tr>
+        <td>name</td>
+        <td>Nombre de la carpeta de resultados.</td>
+        <td>mi_modelo</td>
+    </tr>
+    <tr>
+        <td>device</td>
+        <td>Dispositivo de entrenamiento.</td>
+        <td>cpu, 0</td>
+    </tr>
+    <tr>
+        <td>patience</td>
+        <td>Épocas sin mejora antes de detener anticipadamente el entrenamiento.</td>
+        <td>20</td>
+    </tr>
+    <tr>
+        <td>workers</td>
+        <td>Procesos para cargar datos.</td>
+        <td>4</td>
+    </tr>
+</table>
+
+<h3>9. ¿Dónde se guarda el modelo?</h3>
+
+<p>
+    Al finalizar, Ultralytics genera una carpeta de resultados.
+    Normalmente tendrá esta estructura:
+</p>
+
+<pre class="codigo"><code>runs/
+└── detect/
+    └── detector_botellas_latas/
+        └── weights/
+            ├── best.pt
+            └── last.pt</code></pre>
+
+<ul>
+    <li><strong>best.pt:</strong> mejores pesos obtenidos durante el entrenamiento.</li>
+    <li><strong>last.pt:</strong> pesos del último ciclo de entrenamiento.</li>
+</ul>
+
+<div class="exito">
+    El archivo best.pt contiene el modelo personalizado que
+    utilizaremos para reconocer nuestras botellas y latas.
+</div>
+
+<h3>10. Realizar una detección</h3>
+
+<p>
+    Crear un archivo llamado <strong>detectar_01.py</strong>.
+</p>
+
+<pre class="codigo"><code>from ultralytics import YOLO
+
+# Cargar nuestro modelo entrenado
+model = YOLO(
+    "runs/detect/detector_botellas_latas/weights/best.pt"
+)
+
+# Detectar objetos en una imagen
+resultados = model.predict(
+    source="prueba.jpg",
+    conf=0.40,
+    save=True
+)
+
+print("Detección finalizada")</code></pre>
+
+<p>
+    En este ejemplo, YOLO analiza la imagen prueba.jpg,
+    identifica los objetos y guarda una copia con las detecciones.
+</p>
+
+<h3>11. Argumentos del método predict()</h3>
+
+<table>
+    <tr>
+        <th>Argumento</th>
+        <th>Descripción</th>
+    </tr>
+    <tr>
+        <td>source</td>
+        <td>Imagen, carpeta, video, URL o cámara.</td>
+    </tr>
+    <tr>
+        <td>conf</td>
+        <td>Confianza mínima para aceptar una detección. Ejemplo: 0.40.</td>
+    </tr>
+    <tr>
+        <td>iou</td>
+        <td>Umbral de IoU para eliminar detecciones duplicadas.</td>
+    </tr>
+    <tr>
+        <td>imgsz</td>
+        <td>Tamaño de procesamiento de imagen.</td>
+    </tr>
+    <tr>
+        <td>save</td>
+        <td>Guardar imágenes con las detecciones.</td>
+    </tr>
+    <tr>
+        <td>show</td>
+        <td>Mostrar visualmente los resultados.</td>
+    </tr>
+    <tr>
+        <td>device</td>
+        <td>Dispositivo utilizado para realizar la predicción.</td>
+    </tr>
+    <tr>
+        <td>max_det</td>
+        <td>Número máximo de detecciones por imagen.</td>
+    </tr>
+</table>
+
+<h3>12. Actividad práctica</h3>
+
+<ol>
+    <li>Entrenar el modelo con imágenes de botellas y latas.</li>
+    <li>Realizar pruebas con fotografías diferentes.</li>
+    <li>Modificar el valor de confianza <code>conf</code>.</li>
+    <li>Comparar los resultados con diferentes valores.</li>
+</ol>
+
+</section>
+
+<!-- LABORATORIO 2 -->
+
+<section class="laboratorio">
+
+<div class="numero">Laboratorio 02</div>
+<h2>Crear y entrenar un modelo con objetos propios</h2>
+
+<p>
+    En este laboratorio cada estudiante creará su propio conjunto
+    de datos y entrenará un modelo para reconocer objetos elegidos
+    por él.
+</p>
+
+<h3>1. Planteamiento</h3>
+
+<p>
+    Se desarrollará un detector personalizado capaz de reconocer
+    tres objetos diferentes.
+</p>
+
+<p>Ejemplo de clases:</p>
+
+<ul>
+    <li>Destornillador.</li>
+    <li>Martillo.</li>
+    <li>Alicate.</li>
+</ul>
+
+<p>
+    El estudiante podrá sustituir estos objetos por cualquier
+    otro conjunto de elementos que pueda fotografiar.
+</p>
+
+<h3>2. Recolección de imágenes</h3>
+
+<p>
+    Fotografiar cada objeto desde diferentes perspectivas.
+    Se recomienda comenzar con 100 imágenes por clase y aumentar
+    la cantidad conforme se evalúen los resultados.
+</p>
+
+<p>Las fotografías deben considerar:</p>
+
+<ul>
+    <li>Diferentes orientaciones del objeto.</li>
+    <li>Diferentes distancias de la cámara.</li>
+    <li>Variaciones de iluminación.</li>
+    <li>Diferentes fondos.</li>
+    <li>Objetos individuales y varios objetos en una misma imagen.</li>
+</ul>
+
+<div class="nota">
+    Las imágenes de entrenamiento y validación deben ser diferentes.
+    No se deben utilizar fotografías casi idénticas en ambas carpetas,
+    porque esto puede producir una evaluación engañosa.
+</div>
+
+<h3>3. Etiquetar las imágenes</h3>
+
+<p>
+    Utilizar Roboflow para crear un nuevo proyecto de tipo
+    Object Detection.
+</p>
+
+<ol>
+    <li>Subir las fotografías.</li>
+    <li>Crear las clases correspondientes.</li>
+    <li>Dibujar un rectángulo alrededor de cada objeto.</li>
+    <li>Asignar correctamente cada etiqueta.</li>
+    <li>Verificar que no existan objetos sin etiquetar.</li>
+    <li>Dividir el conjunto en entrenamiento, validación y prueba.</li>
+    <li>Exportar en formato YOLO.</li>
+</ol>
+
+<h3>4. Verificar las clases</h3>
+
+<p>
+    El archivo data.yaml debe contener las clases que queremos
+    reconocer.
+</p>
+
+<pre class="codigo"><code>path: ./herramientas
+
+train: train/images
+val: valid/images
+test: test/images
+
+names:
+  0: destornillador
+  1: martillo
+  2: alicate</code></pre>
+
+<div class="nota">
+    El orden de las clases es importante. Los identificadores
+    de los archivos TXT deben coincidir con los definidos en
+    el archivo YAML.
+</div>
+
+<h3>5. Entrenamiento del modelo personalizado</h3>
+
+<p>
+    Crear un archivo llamado <strong>entrenamiento_02.py</strong>.
+</p>
+
+<pre class="codigo"><code># ==========================================
+# LABORATORIO 02
+# Entrenamiento de un detector personalizado
+# ==========================================
+
+from ultralytics import YOLO
+
+# 1. Cargar modelo preentrenado
+model = YOLO("yolo26n.pt")
+
+# 2. Entrenar con nuestro conjunto de datos
+resultados = model.train(
+    data="herramientas/data.yaml",
+    epochs=100,
+    imgsz=640,
+    batch=8,
+    patience=25,
+    name="detector_herramientas"
+)
+
+# 3. Mostrar finalización
+print("Modelo personalizado entrenado")
+
+
+# ==========================================
+# 4. Cargar los mejores pesos
+# ==========================================
+
+modelo_entrenado = YOLO(
+    "runs/detect/detector_herramientas/weights/best.pt"
+)
+
+# 5. Evaluar el modelo
+metricas = modelo_entrenado.val()
+
+print("Evaluación finalizada")
+
+print("mAP50:", metricas.box.map50)
+print("mAP50-95:", metricas.box.map)</code></pre>
+
+<h3>6. Explicación de las nuevas instrucciones</h3>
+
+<div class="paso">
+    <strong>Evaluar el modelo: val()</strong>
+
+    <pre class="codigo"><code>metricas = modelo_entrenado.val()</code></pre>
+
+    Permite comprobar qué tan bien reconoce los objetos utilizando
+    las imágenes reservadas para validación.
+</div>
+
+<p>Algunos resultados importantes:</p>
+
+<table>
+    <tr>
+        <th>Métrica</th>
+        <th>Significado</th>
+    </tr>
+    <tr>
+        <td>Precision</td>
+        <td>Qué proporción de las detecciones realizadas fue correcta.</td>
+    </tr>
+    <tr>
+        <td>Recall</td>
+        <td>Qué proporción de los objetos existentes logró detectar.</td>
+    </tr>
+    <tr>
+        <td>mAP50</td>
+        <td>Precisión media con un umbral IoU de 0.50.</td>
+    </tr>
+    <tr>
+        <td>mAP50-95</td>
+        <td>Promedio de precisión media en diferentes umbrales IoU.</td>
+    </tr>
+</table>
+
+<div class="nota">
+    Un resultado alto no garantiza que el modelo funcione correctamente
+    en cualquier escenario. Es necesario realizar pruebas con
+    fotografías que no haya utilizado durante el entrenamiento.
+</div>
+
+<h3>7. Realizar detecciones con el modelo propio</h3>
+
+<p>
+    Crear un archivo llamado <strong>prueba_modelo.py</strong>.
+</p>
+
+<pre class="codigo"><code>from ultralytics import YOLO
+
+# Cargar modelo personalizado
+model = YOLO(
+    "runs/detect/detector_herramientas/weights/best.pt"
+)
+
+# Detectar herramientas
+resultados = model.predict(
+    source="herramienta_prueba.jpg",
+    conf=0.50,
+    imgsz=640,
+    save=True
+)
+
+# Mostrar resultados de cada detección
+for resultado in resultados:
+
+    for caja in resultado.boxes:
+
+        clase = int(caja.cls[0])
+        confianza = float(caja.conf[0])
+
+        nombre = resultado.names[clase]
+
+        print("Objeto:", nombre)
+        print("Confianza:", round(confianza, 2))</code></pre>
+
+<h3>8. Comprender los resultados de detección</h3>
+
+<p>
+    El método <code>predict()</code> devuelve una lista de
+    resultados. Cada resultado contiene información de los
+    objetos detectados en una imagen.
+</p>
+
+<table>
+    <tr>
+        <th>Elemento</th>
+        <th>Función</th>
+    </tr>
+    <tr>
+        <td>resultado.boxes</td>
+        <td>Contiene los rectángulos detectados.</td>
+    </tr>
+    <tr>
+        <td>caja.cls</td>
+        <td>Identificador de la clase detectada.</td>
+    </tr>
+    <tr>
+        <td>caja.conf</td>
+        <td>Valor de confianza de la detección.</td>
+    </tr>
+    <tr>
+        <td>caja.xyxy</td>
+        <td>Coordenadas del rectángulo en píxeles.</td>
+    </tr>
+    <tr>
+        <td>resultado.names</td>
+        <td>Diccionario con los nombres de las clases.</td>
+    </tr>
+    <tr>
+        <td>resultado.plot()</td>
+        <td>Devuelve la imagen con las detecciones dibujadas.</td>
+    </tr>
+</table>
+
+<h3>9. Detección utilizando una cámara web</h3>
+
+<p>
+    También podemos utilizar el modelo personalizado para detectar
+    objetos en tiempo real.
+</p>
+
+<pre class="codigo"><code>from ultralytics import YOLO
+
+# Cargar modelo personalizado
+model = YOLO(
+    "runs/detect/detector_herramientas/weights/best.pt"
+)
+
+# Ejecutar detección con la cámara
+model.predict(
+    source=0,
+    conf=0.50,
+    show=True
+)</code></pre>
+
+<p>
+    El argumento <code>source=0</code> indica que se utilizará
+    la cámara predeterminada del equipo.
+</p>
+
+<p>
+    Para finalizar la ventana de detección, presionar la tecla
+    ESC o cerrar la ventana.
+</p>
+
+<h3>10. Mejorar el modelo</h3>
+
+<p>
+    Si el modelo no reconoce correctamente los objetos, se puede
+    repetir el entrenamiento modificando algunos parámetros.
+</p>
+
+<pre class="codigo"><code>model = YOLO("yolo26n.pt")
+
+model.train(
+    data="herramientas/data.yaml",
+    epochs=150,
+    imgsz=640,
+    batch=8,
+    patience=30,
+    augment=True,
+    name="detector_herramientas_v2"
+)</code></pre>
+
+<p>Algunos aspectos que se pueden modificar:</p>
+
+<ul>
+    <li>Aumentar la cantidad de imágenes etiquetadas.</li>
+    <li>Corregir etiquetas incorrectas.</li>
+    <li>Agregar fotografías con diferentes condiciones.</li>
+    <li>Modificar la cantidad de épocas.</li>
+    <li>Probar diferentes tamaños de imagen.</li>
+    <li>Experimentar con aumentación de datos.</li>
+</ul>
+
+</section>
+
+<!-- REFERENCIA -->
+
+<section class="laboratorio">
+
+<div class="numero">Referencia técnica</div>
+<h2>Principales métodos utilizados</h2>
+
+<table>
+    <tr>
+        <th>Método</th>
+        <th>Uso</th>
+        <th>Ejemplo</th>
+    </tr>
+    <tr>
+        <td>YOLO()</td>
+        <td>Cargar o crear un modelo.</td>
+        <td>YOLO("yolo26n.pt")</td>
+    </tr>
+    <tr>
+        <td>train()</td>
+        <td>Entrenar un modelo.</td>
+        <td>model.train(data=...)</td>
+    </tr>
+    <tr>
+        <td>val()</td>
+        <td>Evaluar el modelo.</td>
+        <td>model.val()</td>
+    </tr>
+    <tr>
+        <td>predict()</td>
+        <td>Detectar objetos.</td>
+        <td>model.predict(source=...)</td>
+    </tr>
+    <tr>
+        <td>export()</td>
+        <td>Exportar el modelo a otro formato.</td>
+        <td>model.export(format="onnx")</td>
+    </tr>
+</table>
+
+<h3>Otros argumentos de entrenamiento</h3>
+
+<table>
+    <tr>
+        <th>Argumento</th>
+        <th>Descripción</th>
+    </tr>
+    <tr>
+        <td>pretrained</td>
+        <td>Utilizar pesos preentrenados.</td>
+    </tr>
+    <tr>
+        <td>optimizer</td>
+        <td>Optimizador: SGD, Adam o AdamW.</td>
+    </tr>
+    <tr>
+        <td>lr0</td>
+        <td>Tasa inicial de aprendizaje.</td>
+    </tr>
+    <tr>
+        <td>weight_decay</td>
+        <td>Regularización de pesos.</td>
+    </tr>
+    <tr>
+        <td>mosaic</td>
+        <td>Probabilidad de aplicar aumentación Mosaic.</td>
+    </tr>
+    <tr>
+        <td>flipud</td>
+        <td>Probabilidad de volteo vertical.</td>
+    </tr>
+    <tr>
+        <td>fliplr</td>
+        <td>Probabilidad de volteo horizontal.</td>
+    </tr>
+    <tr>
+        <td>degrees</td>
+        <td>Grados de rotación aleatoria.</td>
+    </tr>
+    <tr>
+        <td>scale</td>
+        <td>Factor de escalado aleatorio.</td>
+    </tr>
+</table>
+
+<div class="nota">
+    Estos son argumentos adicionales que se pueden experimentar.
+    No es necesario utilizarlos todos en un mismo entrenamiento.
+    Sus valores y disponibilidad dependen de la versión y tarea
+    del modelo.
+</div>
+
+</section>
+
+<!-- ACTIVIDAD FINAL -->
+
+<section class="laboratorio">
+
+<div class="numero">Evaluación práctica</div>
+<h2>Actividad final</h2>
+
+<p>
+    Desarrollar un modelo YOLO personalizado para reconocer
+    al menos tres objetos diferentes.
+</p>
+
+<h3>Requisitos</h3>
+
+<ol>
+    <li>Seleccionar tres objetos de interés.</li>
+    <li>Recolectar y etiquetar imágenes de cada clase.</li>
+    <li>Preparar el archivo data.yaml.</li>
+    <li>Entrenar el modelo personalizado.</li>
+    <li>Evaluar sus resultados.</li>
+    <li>Realizar detecciones con fotografías nuevas.</li>
+    <li>Demostrar el funcionamiento utilizando una cámara web.</li>
+</ol>
+
+<h3>Entregables</h3>
+
+<ul>
+    <li>Conjunto de datos etiquetado.</li>
+    <li>Archivo de configuración data.yaml.</li>
+    <li>Código de entrenamiento en Python.</li>
+    <li>Modelo entrenado best.pt.</li>
+    <li>Capturas de los resultados de detección.</li>
+    <li>Demostración del funcionamiento.</li>
+</ul>
+
+<h3>Preguntas de análisis</h3>
+
+<ol>
+    <li>¿Por qué es necesario etiquetar las imágenes?</li>
+    <li>¿Qué sucede si se utilizan pocas imágenes?</li>
+    <li>¿Qué diferencia existe entre train, valid y test?</li>
+    <li>¿Qué sucede cuando se modifica el valor de conf?</li>
+    <li>¿Por qué el modelo puede confundir dos objetos similares?</li>
+    <li>¿Qué cambios realizarías para mejorar las detecciones?</li>
+</ol>
+
+</section>
+
+<section>
+    <h2>Documentación de consulta</h2>
+    <ul>
+        <li>
+            <a href="https://docs.ultralytics.com/es/datasets/detect/"
+               target="_blank">Formato de conjuntos de datos YOLO</a>
+        </li>
+        <li>
+            <a href="https://docs.ultralytics.com/usage/python/"
+               target="_blank">Uso de YOLO con Python</a>
+        </li>
+        <li>
+            <a href="https://docs.ultralytics.com/modes/train/"
+               target="_blank">Parámetros de entrenamiento</a>
+        </li>
+        <li>
+            <a href="https://roboflow.com/"
+               target="_blank">Roboflow: etiquetado de imágenes</a>
+        </li>
+    </ul>
+</section>
+
+</main>
+
+<footer>
+    Laboratorios de visión artificial · Python y YOLO
+</footer>
+
+</body>
+</html>
