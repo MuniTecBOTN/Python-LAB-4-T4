@@ -1,11 +1,9 @@
 import cv2
 import numpy as np
 import os
-from ultralytics import YOLO
 
+# Configuración de parámetros
 
-
-<<<<<<< Updated upstream
 TOTAL_OBJETOS = 3
 FORMATO_NOMBRES = "imagen_{}.jpg"
 ID_CAMARA = 1
@@ -15,28 +13,42 @@ MIN_BUENOS_MATCHES = 12
 MIN_INLIERS = 12
 MIN_RATIO_INLIERS = 0.55
 MARGEN_CLASIFICACION = 2.0
-=======
-ID_CAMARA = 0
->>>>>>> Stashed changes
 
-MODELO_YOLO = "yolov8n.pt"
-
-CONFIANZA_MINIMA = 0.50
-
-CLASE_PERSONA = 0
-
-TAMANO_IMAGEN = 640
-
-COLOR_VERDE = (0, 255, 0)
-COLOR_AZUL = (255, 0, 0)
-COLOR_ROJO = (0, 0, 255)
-COLOR_BLANCO = (255, 255, 255)
-
-GROSOR_RECTANGULO = 2
-
+def preprocesamiento_antidesenfoque_banda(imagen):
+    """
+    Mantiene la resolución completa de la cámara, aplicando un umbralizado
+    adaptativo local básico para separar el fondo blanco de las siluetas.
+    """
+    if imagen is None:
+        return None, []
+    
+    h_frame, w_frame = imagen.shape[:2]
+    
+    gris = cv2.cvtColor(imagen, cv2.COLOR_BGR2GRAY) if len(imagen.shape) == 3 else imagen
+    mascara_adaptativa = cv2.adaptiveThreshold(
+        gris, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+        cv2.THRESH_BINARY_INV, 51, 7
+    )
+    
+    kernel_apertura = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    kernel_cierre = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mascara_limpia = cv2.morphologyEx(mascara_adaptativa, cv2.MORPH_OPEN, kernel_apertura)
+    mascara_perfecta = cv2.morphologyEx(mascara_limpia, cv2.MORPH_CLOSE, kernel_cierre)
+    
+    contornos, _ = cv2.findContours(mascara_perfecta, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    
+    siluetas_fisicas = []
+    MARGEN = 25
+    
+    for c in contornos:
+        if cv2.contourArea(c) > 2000:
+            bx, by, bw, bh = cv2.boundingRect(c)
+            if (bx > MARGEN) and (by > MARGEN) and ((bx + bw) < (w_frame - MARGEN)) and ((by + bh) < (h_frame - MARGEN)):
+                siluetas_fisicas.append((bx, by, bw, bh))
+    
+    return gris, siluetas_fisicas
 
 def cargar_descriptores_plantillas():
-<<<<<<< Updated upstream
     """Carga las 12 vistas y las agrupa en tres objetos, cuatro vistas por objeto."""
     orb = cv2.ORB_create(nfeatures=700, scaleFactor=1.2, nlevels=4)
     datos_plantillas = []
@@ -67,317 +79,141 @@ def cargar_descriptores_plantillas():
         print(f"-> Vista {i} indexada para Objeto {(i - 1) // VISTAS_POR_OBJETO + 1}.")
         cv2.imshow(f"Vista {i}")
     return datos_plantillas
-=======
->>>>>>> Stashed changes
 
-    print("--- FASE 1: CARGANDO MODELO YOLO ---")
-
-    try:
-
-        modelo = YOLO(MODELO_YOLO)
-
-        print("Modelo YOLO cargado correctamente.")
-
-        return modelo
-
-    except Exception as error:
-
-        print(f"Error al cargar YOLO: {error}")
-
+def clasificar_region(region, plantillas, orb, bf):
+    """Devuelve el objeto mejor respaldado por coincidencias geométricas o None."""
+    kp_region, des_region = orb.detectAndCompute(region, None)
+    if des_region is None or len(des_region) < 2:
         return None
 
+    mejores_por_objeto = {}
+    for plantilla in plantillas:
+        pares = bf.knnMatch(plantilla['des'], des_region, k=2)
+        buenos_matches = []
+        for par in pares:
+            if len(par) == 2:
+                primero, segundo = par
+                if primero.distance < 0.72 * segundo.distance:
+                    buenos_matches.append(primero)
 
-
-def preprocesamiento_antidesenfoque_banda(imagen):
-
-    if imagen is None:
-
-        return None
-
-
-    return imagen
-
-
-
-def clasificar_region(region, plantillas):
-
-    resultados = plantillas.track(
-        source=region,
-        persist=True,
-        tracker="bytetrack.yaml",
-        conf=CONFIANZA_MINIMA,
-        imgsz=TAMANO_IMAGEN,
-        classes=[CLASE_PERSONA],
-        verbose=False
-    )
-
-    personas_detectadas = []
-
-    for resultado in resultados:
-
-        cajas = resultado.boxes
-
-        if cajas is None or len(cajas) == 0:
+        if len(buenos_matches) < MIN_BUENOS_MATCHES:
             continue
 
+        puntos_plantilla = []
+        puntos_region = []
+        for match in buenos_matches:
+            puntos_plantilla.append(plantilla['kp'][match.queryIdx].pt)
+            puntos_region.append(kp_region[match.trainIdx].pt)
 
-        identificadores = cajas.id
-
-        coordenadas = cajas.xyxy.cpu().numpy()
-
-        confianzas = cajas.conf.cpu().numpy()
-
-        if identificadores is not None:
-
-            ids = identificadores.int().cpu().tolist()
-
-        else:
-
-            ids = [None] * len(coordenadas)
-
-        for caja, confianza, persona_id in zip(
-            coordenadas,
-            confianzas,
-            ids
-        ):
-
-            x1, y1, x2, y2 = map(int, caja)
-
-            personas_detectadas.append({
-
-                "caja": (x1, y1, x2, y2),
-
-                "confianza": float(confianza),
-
-                "id": persona_id
-
-            })
-
-    return personas_detectadas
-
-
-
-def actualizar_conteo(personas, ids_registrados):
-
-    total_personas = len(personas)
-
-    for persona in personas:
-
-        persona_id = persona["id"]
-
-        if persona_id is not None:
-
-            ids_registrados.add(persona_id)
-
-    total_unicas = len(ids_registrados)
-
-    return total_personas, total_unicas
-
-
-
-def dibujar_detecciones(frame, personas):
-
-    for persona in personas:
-
-        x1, y1, x2, y2 = persona["caja"]
-
-        confianza = persona["confianza"]
-
-        persona_id = persona["id"]
-
-
-        cv2.rectangle(
-            frame,
-            (x1, y1),
-            (x2, y2),
-            COLOR_VERDE,
-            GROSOR_RECTANGULO
+        puntos_plantilla = np.float32(puntos_plantilla).reshape(-1, 1, 2)
+        puntos_region = np.float32(puntos_region).reshape(-1, 1, 2)
+        _, mascara = cv2.findHomography(
+            puntos_plantilla, puntos_region, cv2.RANSAC, 5.0
         )
+        if mascara is None:
+            continue
 
+        inliers = int(mascara.ravel().sum())
+        ratio_inliers = inliers / len(buenos_matches)
+        if inliers < MIN_INLIERS or ratio_inliers < MIN_RATIO_INLIERS:
+            continue
 
-        if persona_id is not None:
+        objeto_id = plantilla['id']
+        resultado = mejores_por_objeto.get(objeto_id)
+        if resultado is None or inliers > resultado:
+            mejores_por_objeto[objeto_id] = inliers
 
-            etiqueta = f"Persona ID: {persona_id}"
+    mejor_id = None
+    mejores_inliers = 0
+    segundo_mejor = 0
 
-        else:
+    for objeto_id, inliers in mejores_por_objeto.items():
+        if inliers > mejores_inliers:
+            segundo_mejor = mejores_inliers
+            mejores_inliers = inliers
+            mejor_id = objeto_id
+        elif inliers > segundo_mejor:
+            segundo_mejor = inliers
 
-            etiqueta = "Persona"
+    if mejor_id is None:
+        return None
 
-
-        etiqueta += f" | {confianza * 100:.1f}%"
-
-        cv2.putText(
-            frame,
-            etiqueta,
-            (x1, max(y1 - 10, 20)),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            COLOR_VERDE,
-            2
-        )
-
-    return frame
-
-
-def mostrar_informacion(
-    frame,
-    total_personas,
-    total_unicas
-):
-
-
-    cv2.rectangle(
-        frame,
-        (10, 10),
-        (430, 125),
-        (30, 30, 30),
-        -1
-    )
-
-
-    cv2.putText(
-        frame,
-        f"Personas actuales: {total_personas}",
-        (20, 40),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.65,
-        COLOR_BLANCO,
-        2
-    )
-
-
-    cv2.putText(
-        frame,
-        f"Total de personas: {total_unicas}",
-        (20, 75),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.65,
-        COLOR_VERDE,
-        2
-    )
-
-
-    if total_personas > 0:
-
-        estado = "DETECCION ACTIVA"
-
-        color_estado = COLOR_VERDE
-
-    else:
-
-        estado = "SIN PERSONAS"
-
-        color_estado = COLOR_ROJO
-
-    cv2.putText(
-        frame,
-        estado,
-        (20, 108),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.55,
-        color_estado,
-        2
-    )
-
-    return frame
-
+    if segundo_mejor > 0 and mejores_inliers < MARGEN_CLASIFICACION * segundo_mejor:
+        return None
+    return mejor_id
 
 def procesar_tiempo_real():
-
     plantillas = cargar_descriptores_plantillas()
-
-    if plantillas is None:
-
-        print("Error: No se pudo cargar YOLO.")
-
+    if not plantillas:
+        print("Error: No se pudieron cargar las plantillas de base.")
         return
 
+    orb = cv2.ORB_create(nfeatures=700, scaleFactor=1.2, nlevels=4)
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=False)
+    
     cap = cv2.VideoCapture(ID_CAMARA)
-
     if not cap.isOpened():
-
-        print("Error: No se puede acceder a la camara.")
-
+        print(f"Error: No se puede acceder a la cámara.")
         return
 
     cap.set(cv2.CAP_PROP_FPS, 30)
 
+    COLOR_VERDE = (0, 255, 0)
+    COLOR_AZUL = (255, 0, 0)
+    COLOR_ROJO = (0, 0, 255) 
+    
+    print("\n--- ¡SISTEMA DE ANÁLISIS BÁSICO EN VIVO INICIADO! ---")
 
-    ids_registrados = set()
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+            
+        frame_visualizacion = frame.copy()
+        
+        gray_actual, siluetas_fisicas = preprocesamiento_antidesenfoque_banda(frame)
+        
+        piezas_detectadas_este_frame = []
+        siluetas_reconocidas_indices = set()
 
-    print("\n--- SISTEMA YOLO + BYTETRACK INICIADO ---")
+        for s_idx, (bx, by, bw, bh) in enumerate(siluetas_fisicas):
+            roi = gray_actual[by:by + bh, bx:bx + bw]
+            objeto_reconocido = clasificar_region(roi, plantillas, orb, bf)
+            if objeto_reconocido is not None:
+                siluetas_reconocidas_indices.add(s_idx)
 
-    print("Presione Q para finalizar.")
+            piezas_detectadas_este_frame.append({
+                'id': objeto_reconocido,
+                'caja': (bx, by, bw, bh)
+            })
 
-    try:
+        total_reconocidas = len(siluetas_reconocidas_indices)
+        color_actual_validas = COLOR_AZUL if total_reconocidas >= 2 else COLOR_VERDE
 
-        while True:
+        for pieza in piezas_detectadas_este_frame:
+            bx, by, bw, bh = pieza['caja']
+            if pieza['id'] is not None:
+                cv2.rectangle(frame_visualizacion, (bx, by), (bx + bw, by + bh), color_actual_validas, 2)
+                etiqueta = f"Objeto {pieza['id']} reconocido"
+                color_etiqueta = color_actual_validas
+            else:
+                cv2.rectangle(frame_visualizacion, (bx, by), (bx + bw, by + bh), COLOR_ROJO, 2)
+                etiqueta = "Objeto no reconocido"
+                color_etiqueta = COLOR_ROJO
+            cv2.putText(frame_visualizacion, etiqueta, (bx, by - 10),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color_etiqueta, 2)
 
-            ret, frame = cap.read()
+        cv2.putText(frame_visualizacion, f"Objetos reconocidos: {total_reconocidas} | No reconocidos: {len(siluetas_fisicas) - len(siluetas_reconocidas_indices)}", 
+                    (20, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+        
+        cv2.imshow("Sistema Industrial De Banda Transportadora - Tiempo Real", frame_visualizacion)
+        
+        tecla = cv2.waitKey(1) & 0xFF
+        if tecla == ord('q'):
+            break
 
-            if not ret:
-
-                print("Error al obtener imagen.")
-
-                break
-
-            frame_visualizacion = frame.copy()
-
-
-            imagen_actual = preprocesamiento_antidesenfoque_banda(
-                frame
-            )
-
-
-            personas_detectadas = clasificar_region(
-                imagen_actual,
-                plantillas
-            )
-
-
-            total_personas, total_unicas = actualizar_conteo(
-                personas_detectadas,
-                ids_registrados
-            )
-
-
-            frame_visualizacion = dibujar_detecciones(
-                frame_visualizacion,
-                personas_detectadas
-            )
-
-
-            frame_visualizacion = mostrar_informacion(
-                frame_visualizacion,
-                total_personas,
-                total_unicas
-            )
-
-
-            cv2.imshow(
-                "Sistema Industrial YOLOv8 + ByteTrack",
-                frame_visualizacion
-            )
-
-            tecla = cv2.waitKey(1) & 0xFF
-
-            if tecla == ord('q'):
-
-                break
-
-    finally:
-
-        cap.release()
-
-        cv2.destroyAllWindows()
-
-        print("\n--- RESUMEN DEL SISTEMA ---")
-
-        print(f"Personas unicas registradas: {len(ids_registrados)}")
-
-        print("Sistema finalizado correctamente.")
-
+    cap.release()
+    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-
     procesar_tiempo_real()
