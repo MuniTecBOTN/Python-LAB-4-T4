@@ -10,51 +10,100 @@ import time
 PLANTILLAS = [
     # OBJETO 1
     {
-        "ruta": "main/plantillas/object1.jpg",
+        "ruta": "main/plantillas/cap1.jpg",
+        "objeto": "OBJETO 1",
+        "distancia": "CERCA"
+    },
+    {
+        "ruta": "main/plantillas/cap1_mas_cerca.jpg",
+        "objeto": "OBJETO 1",
+        "distancia": "CERCA"
+    },
+    
+    {
+        "ruta": "main/plantillas/cap1_lejos.jpg",
         "objeto": "OBJETO 1",
         "distancia": "LEJOS"
     },
+    
     {
-        "ruta": "main/plantillas/objeto_1_cerca.jpg",
-        "objeto": "OBJETO 1",
-        "distancia": "CERCA"
+        "ruta": "main/plantillas/cap1_mas_lejos.jpg",
+        "objeto": "OBJETO 1",   
+        "distancia": "LEJOS"
     },
 
     # OBJETO 2
     {
-        "ruta": "main/plantillas/object2.jpg",
+        "ruta": "main/plantillas/cap2.jpg",
+        "objeto": "OBJETO 2",
+        "distancia": "CERCA"
+    },
+    {
+        "ruta": "main/plantillas/cap2_mas_cerca.jpg",
+        "objeto": "OBJETO 2",
+        "distancia": "CERCA"
+    },
+    
+    {
+        "ruta": "main/plantillas/cap2_lejos.jpg",
         "objeto": "OBJETO 2",
         "distancia": "LEJOS"
     },
+    
     {
-        "ruta": "main/plantillas/objeto_2_cerca.jpg",
+        "ruta": "main/plantillas/cap2_mas_lejos.jpg",
         "objeto": "OBJETO 2",
-        "distancia": "CERCA"
+        "distancia": "LEJOS"
     },
 
     # OBJETO 3
     {
-        "ruta": "main/plantillas/object3.jpg",
+        "ruta": "main/plantillas/cap3.jpg",
+        "objeto": "OBJETO 3",
+        "distancia": "CERCA"
+    },
+    {
+        "ruta": "main/plantillas/cap3_mas_cerca.jpg",
+        "objeto": "OBJETO 3",
+        "distancia": "CERCA"
+    },
+    
+    {
+        
+        "ruta": "main/plantillas/cap3_lejos.jpg",
         "objeto": "OBJETO 3",
         "distancia": "LEJOS"
     },
+    
     {
-        "ruta": "main/plantillas/objeto_3_cerca.jpg",
+        "ruta": "main/plantillas/cap3_mas_lejos.jpg",
         "objeto": "OBJETO 3",
-        "distancia": "CERCA"
+        "distancia": "LEJOS"
     },
 
     # OBJETO 4
     {
-        "ruta": "main/plantillas/object4.jpg",
+        "ruta": "main/plantillas/cap4.jpg",
         "objeto": "OBJETO 4",
-        "distancia": "LEJOS"
+        "distancia": "LEJOS",
     },
     {
-        "ruta": "main/plantillas/objeto_4_cerca.jpg",
+        "ruta": "main/plantillas/cap4_cerca.jpg",
         "objeto": "OBJETO 4",
-        "distancia": "CERCA"
-    }
+        "distancia": "CERCA",
+    },
+    
+    {
+        "ruta" : "main/plantillas/cap4_mas_lejos.jpg",
+        "objeto" : "OBJETO 4",
+        "distancia" : "LEJOS",
+    },
+    
+    {
+        "ruta" : "main/plantillas/cap4_mas_cerca.jpg",
+        "objeto" : "OBJETO 4",
+        "distancia" : "CERCA",
+    },
 ]
 
 ANCHO = 640
@@ -78,9 +127,12 @@ clahe = cv2.createCLAHE(
 )
 
 orb = cv2.ORB_create(
-    nfeatures=2000,
+    nfeatures=1000,
     scaleFactor=1.2,
-    nlevels=10
+    nlevels=8,
+    edgeThreshold=15,
+    patchSize=31,
+    firstLevel=0,
 )
 
 matcher = cv2.BFMatcher(cv2.NORM_HAMMING)
@@ -196,21 +248,31 @@ def validar_geometria(projected, frame_shape):
 # 5. CAMARA
 # ==========================================
 
-cap = cv2.VideoCapture(1)
+# ==========================================
+# CAMARA OPTIMIZADA
+# ==========================================
+
+cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
 
 if not cap.isOpened():
-
-    print("No se pudo abrir la camara")
+    print("No se pudo abrir la cámara")
     raise SystemExit
 
+# Resolución de captura
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)
 
-smooth_corners = None
-previous_name = None
+# Intentar reducir el almacenamiento de fotogramas
+cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
-previous_time = time.perf_counter()
+# Intentar utilizar MJPG si la cámara lo admite
+cap.set(cv2.CAP_PROP_FOURCC,
+        cv2.VideoWriter_fourcc(*'MJPG'))
 
+# Consultar configuración real
+print("Ancho:", cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+print("Alto:", cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+print("FPS cámara:", cap.get(cv2.CAP_PROP_FPS))
 
 # ==========================================
 # 6. DETECCION EN TIEMPO REAL
@@ -501,7 +563,7 @@ while True:
             "OBJETO PRINCIPAL RECONOCIDO",
             (25, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.65,
+            0.30,
             (0, 255, 0),
             2
         )
@@ -602,7 +664,7 @@ while True:
                     "PIEZA NO RECONOCIDA",
                     (rx, max(ry - 10, 20)),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.55,
+                    0.30,
                     (0, 0, 255),
                     2
                 )
@@ -620,7 +682,7 @@ while True:
             "OBJETO NO RECONOCIDO",
             (25, 40),
             cv2.FONT_HERSHEY_SIMPLEX,
-            0.7,
+            0.30,
             (0, 0, 255),
             2
         )
@@ -640,18 +702,25 @@ while True:
     # 9. FPS
     # ======================================
 
-    current_time = time.perf_counter()
+# Antes del while
+    fps_counter = 0
+    fps_start = time.perf_counter()
+    fps = 0
+    fps_counter += 1
 
-    elapsed = current_time - previous_time
+    elapsed = time.perf_counter() - fps_start
 
-    fps = 1 / elapsed if elapsed > 0 else 0
+    if elapsed >= 1.0:
 
-    previous_time = current_time
+        fps = fps_counter / elapsed
+
+        fps_counter = 0
+        fps_start = time.perf_counter()
 
     cv2.putText(
         output,
         f"FPS: {fps:.1f}",
-        (original_w - 130, 35),
+        (output.shape[1] - 130, 35),
         cv2.FONT_HERSHEY_SIMPLEX,
         0.65,
         (0, 255, 255),
