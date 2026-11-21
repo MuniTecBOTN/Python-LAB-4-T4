@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Selector HSV para OpenCV</title>
+  <style>
+    :root {
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #20242b;
+      background: #f3f5f8;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px 16px; }
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #e1e5eb;
+      border-radius: 20px;
+      padding: clamp(20px, 4vw, 36px);
+      box-shadow: 0 12px 35px rgba(20, 30, 50, .08);
+    }
+    h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 4vw, 2rem); }
+    .intro { margin: 0 0 24px; color: #5f6875; line-height: 1.55; }
+    .preview {
+      min-height: 180px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 24px;
+      border: 1px solid rgba(0,0,0,.08);
+      transition: background-color .12s ease;
+    }
+    .hex-label {
+      padding: 9px 14px;
+      border-radius: 10px;
+      color: white;
+      background: rgba(0,0,0,.32);
+      font: 700 1.25rem ui-monospace, SFMono-Regular, Consolas, monospace;
+      text-shadow: 0 1px 2px rgba(0,0,0,.2);
+    }
+    .control { margin: 22px 0; }
+    .control-header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; margin-bottom: 10px;
+    }
+    label { font-weight: 700; }
+    output { font-variant-numeric: tabular-nums; font-weight: 700; }
+    input[type="range"] { width: 100%; accent-color: #3b65d9; cursor: pointer; }
+    .range-ends { display: flex; justify-content: space-between; color: #737d8b; font-size: .82rem; }
+    .results {
+      margin-top: 28px; padding-top: 24px; border-top: 1px solid #e5e8ee;
+    }
+    .results h2 { margin: 0 0 14px; font-size: 1.15rem; }
+    .values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .value-card { background: #f4f6f9; padding: 15px; border-radius: 12px; min-width: 0; }
+    .value-card span { display: block; color: #687384; font-size: .85rem; margin-bottom: 5px; }
+    .value-card strong { font-size: 1.45rem; font-variant-numeric: tabular-nums; }
+    .tuple {
+      margin: 14px 0 0; padding: 14px; background: #20242b; color: #f6f7f9;
+      border-radius: 10px; overflow-wrap: anywhere;
+      font: .95rem ui-monospace, SFMono-Regular, Consolas, monospace;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    button {
+      border: 0; border-radius: 10px; padding: 11px 16px;
+      font: inherit; font-weight: 700; cursor: pointer;
+    }
+    .primary { color: white; background: #315bd6; }
+    .secondary { color: #263142; background: #e9edf4; }
+    button:hover { filter: brightness(.96); }
+    .note { margin: 18px 0 0; color: #687384; font-size: .9rem; line-height: 1.5; }
+    #status { min-height: 1.3em; margin-top: 10px; color: #176b3a; font-size: .9rem; }
+    @media (max-width: 480px) {
+      body { padding: 12px 8px; }
+      main { border-radius: 14px; }
+      .values { gap: 7px; }
+      .value-card { padding: 11px 8px; }
+      .value-card strong { font-size: 1.2rem; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Selector de color HSV</h1>
+    <p class="intro">
+      Ajusta el tono, la saturación y el valor. Los porcentajes del selector se convierten
+      automáticamente a los rangos HSV de OpenCV para imágenes de 8 bits.
+    </p>
+
+    <section id="preview" class="preview" aria-label="Vista previa del color">
+      <span id="hexLabel" class="hex-label">#FF0000</span>
+    </section>
+
+    <div class="control">
+      <div class="control-header">
+        <label for="hue">H — Tono</label>
+        <output id="hueOutput" for="hue">0 %</output>
+      </div>
+      <input id="hue" type="range" min="0" max="100" step="1" value="0">
+      <div class="range-ends"><span>0 %</span><span>100 %</span></div>
+    </div>
+
+    <div class="control">
+      <div class="control-header">
+        <label for="saturation">S — Saturación</label>
+        <output id="saturationOutput" for="saturation">100 %</output>
+      </div>
+      <input id="saturation" type="range" min="0" max="100" step="1" value="100">
+      <div class="range-ends"><span>0 % · gris</span><span>100 % · máxima</span></div>
+    </div>
+
+    <div class="control">
+      <div class="control-header">
+        <label for="value">V — Valor / brillo</label>
+        <output id="valueOutput" for="value">100 %</output>
+      </div>
+      <input id="value" type="range" min="0" max="100" step="1" value="100">
+      <div class="range-ends"><span>0 % · negro</span><span>100 % · máximo</span></div>
+    </div>
+
+    <section class="results">
+      <h2>Valores equivalentes para OpenCV</h2>
+      <div class="values">
+        <div class="value-card"><span>H · rango 0–179</span><strong id="hCv">0</strong></div>
+        <div class="value-card"><span>S · rango 0–255</span><strong id="sCv">255</strong></div>
+        <div class="value-card"><span>V · rango 0–255</span><strong id="vCv">255</strong></div>
+      </div>
+      <div id="tuple" class="tuple">(0, 255, 255)</div>
+      <div class="actions">
+        <button id="copyTuple" class="primary" type="button">Copiar tupla HSV</button>
+        <button id="copyPython" class="secondary" type="button">Copiar código Python</button>
+        <button id="reset" class="secondary" type="button">Restablecer</button>
+      </div>
+      <p id="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <p class="note">
+      Nota: OpenCV usa H = 0–179 con <code>cv2.COLOR_BGR2HSV</code> para imágenes de 8 bits.
+      Con <code>cv2.COLOR_BGR2HSV_FULL</code>, H usa 0–255. Esta herramienta calcula una
+      equivalencia aproximada de porcentajes a la escala convencional de OpenCV.
+    </p>
+  </main>
+
+  <script>
+    const hue = document.getElementById("hue");
+    const saturation = document.getElementById("saturation");
+    const value = document.getElementById("value");
+    const status = document.getElementById("status");
+
+    function hsvToRgb(h, s, v) {
+      // h: grados (0–360), s y v: proporciones (0–1)
+      const c = v * s;
+      const x = c * (1 - Math.abs((h / 60) % 2 - 1));
+      const m = v - c;
+      let rgb;
+      if (h < 60) rgb = [c, x, 0];
+      else if (h < 120) rgb = [x, c, 0];
+      else if (h < 180) rgb = [0, c, x];
+      else if (h < 240) rgb = [0, x, c];
+      else if (h < 300) rgb = [x, 0, c];
+      else rgb = [c, 0, x];
+      return rgb.map(channel => Math.round((channel + m) * 255));
+    }
+
+    function toHex(rgb) {
+      return "#" + rgb.map(n => n.toString(16).padStart(2, "0")).join("").toUpperCase();
+    }
+
+    function update() {
+      const h = Number(hue.value);
+      const s = Number(saturation.value);
+      const v = Number(value.value);
+
+      // El control H representa un círculo completo: 0–100 % -> 0–360 grados.
+      const rgb = hsvToRgb((h * 3.6) % 360, s / 100, v / 100);
+      const hex = toHex(rgb);
+
+      document.getElementById("preview").style.backgroundColor = hex;
+      document.getElementById("hexLabel").textContent = hex;
+      document.getElementById("hueOutput").textContent = `${h} %`;
+      document.getElementById("saturationOutput").textContent = `${s} %`;
+      document.getElementById("valueOutput").textContent = `${v} %`;
+
+      const hCv = Math.min(179, Math.round(h * 179 / 100));
+      const sCv = Math.round(s * 255 / 100);
+      const vCv = Math.round(v * 255 / 100);
+
+      document.getElementById("hCv").textContent = hCv;
+      document.getElementById("sCv").textContent = sCv;
+      document.getElementById("vCv").textContent = vCv;
+      document.getElementById("tuple").textContent = `(${hCv}, ${sCv}, ${vCv})`;
+      status.textContent = "";
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        status.textContent = "Copiado al portapapeles.";
+      } catch (error) {
+        // Respaldo para contextos donde Clipboard API no está disponible.
+        const area = document.createElement("textarea");
+        area.value = text;
+        area.style.position = "fixed";
+        area.style.opacity = "0";
+        document.body.appendChild(area);
+        area.select();
+        const ok = document.execCommand("copy");
+        area.remove();
+        status.textContent = ok ? "Copiado al portapapeles." : "No se pudo copiar automáticamente.";
+      }
+    }
+
+    [hue, saturation, value].forEach(input => input.addEventListener("input", update));
+
+    document.getElementById("copyTuple").addEventListener("click", () => {
+      copyText(document.getElementById("tuple").textContent);
+    });
+
+    document.getElementById("copyPython").addEventListener("click", () => {
+      copyText(`color_bajo = (${document.getElementById("hCv").textContent}, ${document.getElementById("sCv").textContent}, ${document.getElementById("vCv").textContent})`);
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      hue.value = 0;
+      saturation.value = 100;
+      value.value = 100;
+      update();
+    });
+
+    update();
+  </script>
+</body>
+</html>

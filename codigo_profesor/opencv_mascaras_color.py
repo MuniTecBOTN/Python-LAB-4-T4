@@ -41,7 +41,7 @@ imagen_filtrada = cv2.bitwise_and(
 )
 
 # Crear un fondo verde
-resultado_verde = np.full_like(imagen_redimensionada, (0, 255, 0))
+resultado_verde = np.full_like(imagen_redimensionada, (80, 170, 120))
 print(f"codigo fondo: {resultado_verde[0,0]}")
 
 resultado_verde[mascara_combinada > 0] = imagen_redimensionada[mascara_combinada > 0]

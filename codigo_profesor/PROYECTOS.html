@@ -1,0 +1,412 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proyectos Finales | YOLO con Python</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+            color: #172033;
+            line-height: 1.6;
+        }
+
+        header {
+            background: linear-gradient(135deg, #101c35, #174b75);
+            color: white;
+            padding: 65px 20px;
+            text-align: center;
+        }
+
+        .etiqueta {
+            display: inline-block;
+            background-color: #fbbf24;
+            color: #172033;
+            padding: 7px 16px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+        }
+
+        header h1 {
+            font-size: 38px;
+            font-weight: 800;
+            margin-bottom: 15px;
+        }
+
+        header p {
+            max-width: 700px;
+            margin: auto;
+            color: #dbeafe;
+            font-size: 16px;
+        }
+
+        .contenedor {
+            max-width: 1200px;
+            margin: 45px auto;
+            padding: 0 25px;
+        }
+
+        .introduccion {
+            margin-bottom: 30px;
+        }
+
+        .introduccion h2 {
+            font-size: 25px;
+            margin-bottom: 8px;
+            color: #102a43;
+        }
+
+        .introduccion p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .proyectos {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 25px;
+        }
+
+        .tarjeta {
+            background-color: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(15, 23, 42, 0.06);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid #e2e8f0;
+        }
+
+        .tarjeta:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+        }
+
+        .tarjeta img {
+            width: 100%;
+            height: 225px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .contenido {
+            padding: 23px;
+        }
+
+        .numero {
+            display: inline-block;
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 5px 11px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+
+        .contenido h3 {
+            color: #102a43;
+            font-size: 19px;
+            margin-bottom: 10px;
+        }
+
+        .contenido p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .tecnologia {
+            display: flex;
+            gap: 8px;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+
+        .tecnologia span {
+            background-color: #f1f5f9;
+            color: #475569;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .nota {
+            background-color: #e0f2fe;
+            border-left: 5px solid #0284c7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 35px;
+        }
+
+        .nota h3 {
+            color: #075985;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .nota p {
+            color: #334155;
+            font-size: 13px;
+        }
+
+        footer {
+            background-color: #101c35;
+            color: #cbd5e1;
+            text-align: center;
+            padding: 25px;
+            margin-top: 55px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 700px) {
+            header {
+                padding: 45px 20px;
+            }
+
+            header h1 {
+                font-size: 28px;
+            }
+
+            .proyectos {
+                grid-template-columns: 1fr;
+            }
+
+            .contenedor {
+                padding: 0 16px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <span class="etiqueta">PROYECTO FINAL</span>
+
+        <h1>Desarrolla con YOLO</h1>
+
+        <p>
+            Ocho propuestas de proyectos para aplicar visión por computadora
+            utilizando Python, YOLO y procesamiento de imágenes en tiempo real.
+        </p>
+    </header>
+
+    <main class="contenedor">
+
+        <section class="introduccion">
+            <h2>Propuestas de proyectos</h2>
+            <p>
+                Selecciona una propuesta y desarrolla un sistema capaz de
+                detectar, identificar, clasificar o contar objetos mediante
+                inteligencia artificial.
+            </p>
+        </section>
+
+        <section class="proyectos">
+
+            <!-- PROYECTO 1 -->
+            <article class="tarjeta">
+                <img src="https://images.pexels.com/photos/33266/work-chinese-industrial-professional.jpg"
+                     alt="Trabajador utilizando equipo de seguridad">
+
+                <div class="contenido">
+                    <span class="numero">PROYECTO 01</span>
+                    <h3>Detección de cascos de seguridad</h3>
+                    <p>
+                        Identificación de personas que utilizan o no casco
+                        de seguridad en zonas de construcción o áreas
+                        industriales.
+                    </p>
+                    <div class="tecnologia">
+                        <span>YOLO</span>
+                        <span>OpenCV</span>
+                        <span>Python</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- PROYECTO 2 -->
+            <article class="tarjeta">
+                <img src="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?w=900"
+                     alt="Estacionamiento de vehículos">
+
+                <div class="contenido">
+                    <span class="numero">PROYECTO 02</span>
+                    <h3>Detector de espacios de estacionamiento</h3>
+                    <p>
+                        Detección de vehículos para determinar qué espacios
+                        de un estacionamiento están ocupados y cuáles
+                        se encuentran disponibles.
+                    </p>
+                    <div class="tecnologia">
+                        <span>YOLO</span>
+                        <span>OpenCV</span>
+                        <span>Detección de objetos</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- PROYECTO 3 -->
+            <article class="tarjeta">
+                <img src="https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?w=900"
+                     alt="Residuos para reciclaje">
+
+                <div class="contenido">
+                    <span class="numero">PROYECTO 03</span>
+                    <h3>Clasificador de residuos</h3>
+                    <p>
+                        Identificación y clasificación de residuos como
+                        plástico, papel, vidrio y metal para facilitar
+                        los procesos de reciclaje.
+                    </p>
+                    <div class="tecnologia">
+                        <span>YOLO</span>
+                        <span>Clasificación</span>
+                        <span>Python</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- PROYECTO 4 -->
+            <article class="tarjeta">
+                <img src="https://transito.gob.gt/wp-content/uploads/2021/07/Captura-de-Pantalla-2021-07-20-a-las-09.47.24.png"
+                     alt="Vehículos en una carretera">
+
+                <div class="contenido">
+                    <span class="numero">PROYECTO 04</span>
+                    <h3>Monitor de tráfico vehicular</h3>
+                    <p>
+                        Detección y conteo de automóviles, motocicletas,
+                        autobuses y camiones para analizar el flujo
+                        de tránsito.
+                    </p>
+                    <div class="tecnologia">
+                        <span>YOLO</span>
+                        <span>Seguimiento</span>
+                        <span>OpenCV</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- PROYECTO 5 -->
+            <article class="tarjeta">
+                <img src="https://beltinglab.com/storage/cinta-transportadora-telescopica-1685367131RR9am.jpg"
+                     alt="Proceso industrial">
+
+                <div class="contenido">
+                    <span class="numero">PROYECTO 05</span>
+                    <h3>Inspección de productos en una banda transportadora</h3>
+                    <p>
+                        Identificación y conteo de productos mediante
+                        una cámara, detectando elementos diferentes
+                        a los esperados o posibles defectos visibles.
+                    </p>
+                    <div class="tecnologia">
+                        <span>YOLO</span>
+                        <span>OpenCV</span>
+                        <span>Tiempo real</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- PROYECTO 6 -->
+            <article class="tarjeta">
+                <img src="https://images.unsplash.com/photo-1586864387967-d02ef85d93e8?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=NHwxMjA3fDA%3D"
+                     alt="Herramientas de trabajo">
+
+                <div class="contenido">
+                    <span class="numero">PROYECTO 06</span>
+                    <h3>Detector y clasificador de herramientas</h3>
+                    <p>
+                        Reconocimiento de herramientas como martillos,
+                        destornilladores, alicates y llaves, permitiendo
+                        identificar y contabilizar cada elemento.
+                    </p>
+                    <div class="tecnologia">
+                        <span>YOLO</span>
+                        <span>Detección</span>
+                        <span>Python</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- PROYECTO 7 -->
+            <article class="tarjeta">
+                <img src="https://images.unsplash.com/photo-1517849845537-4d257902454a?w=900"
+                     alt="Perro observado por una cámara">
+
+                <div class="contenido">
+                    <span class="numero">PROYECTO 07</span>
+                    <h3>Sistema de detección de animales</h3>
+                    <p>
+                        Identificación de diferentes animales mediante
+                        una cámara, permitiendo reconocer especies,
+                        detectar su presencia y llevar un conteo.
+                    </p>
+                    <div class="tecnologia">
+                        <span>YOLO</span>
+                        <span>OpenCV</span>
+                        <span>Clasificación</span>
+                    </div>
+                </div>
+            </article>
+
+            <!-- PROYECTO 8 -->
+            <article class="tarjeta">
+                <img src="https://www.dinycon.com/gestor/recursos/uploads/imagenes/sector/centrocomercial.jpg"
+                     alt="Espacio de trabajo con personas">
+
+                <div class="contenido">
+                    <span class="numero">PROYECTO 08</span>
+                    <h3>Monitor de aforo de personas</h3>
+                    <p>
+                        Detección y conteo de personas que ingresan o
+                        salen de un establecimiento para controlar
+                        la cantidad de individuos presentes.
+                    </p>
+                    <div class="tecnologia">
+                        <span>YOLO</span>
+                        <span>Seguimiento</span>
+                        <span>OpenCV</span>
+                    </div>
+                </div>
+            </article>
+
+        </section>
+
+        <section class="nota">
+            <h3>Consideraciones para el proyecto final</h3>
+            <p>
+                Cada proyecto debe implementar un modelo YOLO, utilizar
+                imágenes o video como entrada y mostrar visualmente los
+                resultados de las detecciones. Se recomienda utilizar
+                una cámara web para demostrar el funcionamiento en
+                tiempo real.
+            </p>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>VISIÓN POR COMPUTADORA CON PYTHON | PROYECTOS FINALES</p>
+        <p>Inteligencia Artificial · YOLO · OpenCV</p>
+    </footer>
+
+</body>
+</html>

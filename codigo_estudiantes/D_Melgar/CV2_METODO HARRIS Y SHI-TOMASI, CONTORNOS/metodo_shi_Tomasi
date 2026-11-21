@@ -1,0 +1,17 @@
+import cv2
+
+img = cv2.imread('1.jpg')
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Encontrar las 50 mejores esquinas usando Shi-Tomasi
+corners = cv2.goodFeaturesToTrack(gray, maxCorners=50, qualityLevel=0.01, minDistance=10)
+
+# Dibujar las esquinas
+for i in corners:
+  x, y = i.ravel()
+  cv2.circle(img, (int(x), int(y)), 3, (0, 255, 0), -1)
+  
+cv2.imshow("Figuras", gray)
+cv2.imshow("Figuras 2", img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Guía académica para desarrollar un sistema de reconocimiento de piezas en una banda transportadora mediante ORB y flujo óptico Lucas-Kanade.">
+<title>Guía práctica | Reconocimiento de piezas mediante ORB</title>
+<style>
+:root{
+ --navy:#10243a;--navy2:#183653;--blue:#2563a6;--blue-soft:#eaf2fb;
+ --ink:#243447;--muted:#607184;--line:#d9e1e9;--paper:#fff;--bg:#f3f6f9;
+ --green:#16834a;--green-soft:#e7f5ed;--red:#c83232;--red-soft:#fff0ef;
+ --amber:#a96b08;--amber-soft:#fff5df;--shadow:0 10px 28px rgba(16,36,58,.08);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:90px}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.65 "Segoe UI",Arial,sans-serif}
+header{background:linear-gradient(120deg,var(--navy),#1b4265);color:#fff;padding:52px 22px 42px}
+.hero,.wrap{max-width:1160px;margin:auto}
+.eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:.76rem;font-weight:700;color:#b8d4ef}
+h1{font-size:clamp(2rem,4vw,3.25rem);line-height:1.12;max-width:900px;margin:12px 0}
+header p{max-width:820px;color:#d7e4ef;font-size:1.08rem;margin:15px 0 0}
+.meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:25px}
+.meta span{border:1px solid #66829d;border-radius:30px;padding:5px 12px;font-size:.84rem;color:#e8f1f8}
+nav{position:sticky;top:0;z-index:10;background:#fff;border-bottom:1px solid var(--line);box-shadow:0 3px 12px #10243a0a}
+.navinner{max-width:1160px;margin:auto;display:flex;gap:6px;overflow-x:auto;padding:10px 16px}
+nav a{white-space:nowrap;text-decoration:none;color:#40566c;font-size:.84rem;font-weight:650;padding:8px 11px;border-radius:8px}
+nav a:hover{background:var(--blue-soft);color:var(--blue)}
+main{max-width:1160px;margin:28px auto;padding:0 18px 60px}
+section{scroll-margin-top:88px;margin:24px 0;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:clamp(20px,3vw,34px);box-shadow:var(--shadow)}
+h2{font-size:1.55rem;line-height:1.25;color:var(--navy);margin:0 0 16px}
+h3{font-size:1.1rem;color:var(--navy2);margin:22px 0 8px}
+p{margin:9px 0}
+.lead{font-size:1.05rem;color:#40566c}
+.kicker{font-size:.76rem;text-transform:uppercase;letter-spacing:.12em;color:var(--blue);font-weight:750;margin-bottom:7px}
+.grid{display:grid;grid-template-columns:repeat( auto-fit,minmax(220px,1fr));gap:14px;margin:18px 0}
+.card{border:1px solid var(--line);border-radius:12px;padding:17px;background:#fff}
+.card h3{margin:0 0 7px;font-size:1rem}
+.card p{font-size:.93rem;color:var(--muted);margin:0}
+.callout{border-left:4px solid var(--blue);background:var(--blue-soft);padding:14px 17px;border-radius:0 10px 10px 0;margin:17px 0}
+.callout.warning{border-color:#d69a27;background:var(--amber-soft)}
+.callout.good{border-color:var(--green);background:var(--green-soft)}
+.callout.danger{border-color:var(--red);background:var(--red-soft)}
+.diagram{border:1px solid var(--line);border-radius:13px;padding:12px;background:#fbfdff;margin:15px 0}
+.diagram svg{width:100%;height:auto;display:block}
+.caption{font-size:.86rem;color:var(--muted);margin:7px 4px 0}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.93rem}
+th,td{border:1px solid var(--line);padding:11px 12px;text-align:left;vertical-align:top}
+th{background:#edf2f7;color:var(--navy);font-weight:750}
+tbody tr:nth-child(even){background:#fafbfd}
+code{font-family:Consolas,"Courier New",monospace;background:#eef2f6;color:#193b5a;padding:2px 5px;border-radius:4px;font-size:.91em}
+pre{background:#101e2d;color:#e6edf5;padding:17px;border-radius:10px;overflow-x:auto;font: .88rem/1.55 Consolas,monospace}
+pre code{background:none;color:inherit;padding:0}
+ol,ul{padding-left:23px}
+li{margin:5px 0}
+.checklist{display:grid;gap:9px;margin:15px 0}
+.check{display:flex;align-items:flex-start;gap:11px;padding:11px 13px;border:1px solid var(--line);border-radius:9px;background:#fcfdff}
+.check input{margin-top:5px;accent-color:var(--blue);width:17px;height:17px;flex:none}
+.check span{flex:1}
+.progress{height:9px;background:#e8edf2;border-radius:20px;overflow:hidden;margin:12px 0 5px}
+.progressbar{height:100%;width:0;background:var(--blue);transition:width .2s}
+.small{font-size:.86rem;color:var(--muted)}
+.pill{display:inline-block;padding:3px 9px;border-radius:30px;font-size:.78rem;font-weight:750}
+.green{background:var(--green-soft);color:var(--green)}.red{background:var(--red-soft);color:var(--red)}
+footer{background:var(--navy);color:#d6e1eb;padding:25px;text-align:center;font-size:.88rem}
+@media(max-width:650px){header{padding:38px 18px 30px}main{padding:0 10px 35px}section{padding:19px 16px}table{font-size:.83rem}th,td{padding:8px}}
+@media print{
+ @page{size:A4;margin:14mm}
+ body{background:#fff;color:#111;font-size:10pt}
+ header{background:#fff!important;color:#111;padding:0 0 18px;border-bottom:2px solid #183653}
+ header p,.eyebrow,.meta span{color:#333}
+ .meta span{border-color:#888}
+ nav{display:none}
+ main{max-width:none;margin:0;padding:0}
+ section{box-shadow:none;border:1px solid #bbb;margin:12px 0;padding:16px;break-inside:avoid}
+ .diagram{break-inside:avoid}
+ a{color:inherit;text-decoration:none}
+ .check input{appearance:none;border:1px solid #333;width:12px;height:12px}
+ footer{background:#fff;color:#333;border-top:1px solid #888}
+ .progress{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+ <div class="hero">
+  <div class="eyebrow">Guía académica · Visión por computadora con Python</div>
+  <h1>Sistema de reconocimiento de piezas en una banda transportadora mediante ORB</h1>
+  <p>Actividad práctica de inspección visual: registro de tres referencias, reconocimiento por características locales, validación geométrica y seguimiento temporal con flujo óptico de Lucas-Kanade.</p>
+  <div class="meta"><span>Python + OpenCV</span><span>ORB · BFMatcher · RANSAC</span><span>Lucas-Kanade</span><span>100 puntos</span></div>
+ </div>
+</header>
+<nav aria-label="Navegación de la guía"><div class="navinner">
+ <a href="#problema">Problema</a><a href="#montaje">Montaje físico</a><a href="#objetivos">Objetivos</a><a href="#condiciones">Condiciones</a><a href="#etapas">Desarrollo</a><a href="#resultados">Resultados</a><a href="#pruebas">Pruebas</a><a href="#entregables">Entregables</a><a href="#evaluacion">Evaluación</a><a href="#reto">Reto</a>
+</div></nav>
+<main>
+<section id="problema">
+ <div class="kicker">01 · Contexto</div><h2>Planteamiento del problema</h2>
+ <p class="lead">Una empresa utiliza una banda transportadora por la que circulan piezas durante un proceso de producción. Se necesita reconocer únicamente tres tipos de piezas previamente registrados y señalar cualquier pieza diferente.</p>
+ <p>Una cámara fija captura continuamente la zona de inspección. El programa analiza cada objeto localizado y compara sus características visuales con tres imágenes de referencia o <em>plantillas</em>.</p>
+ <div class="grid">
+  <article class="card"><h3><span class="pill green">Pieza conocida</span></h3><p>Si coincide de forma suficiente con una plantilla y supera la validación geométrica, se dibuja un contorno verde y se muestra su categoría.</p></article>
+  <article class="card"><h3><span class="pill red">Pieza desconocida</span></h3><p>Si el objeto fue localizado y pudo evaluarse, pero ninguna plantilla alcanza los criterios de coincidencia, se dibuja en rojo y se activa la alerta.</p></article>
+  <article class="card"><h3><span class="pill">No evaluable</span></h3><p>Si la imagen es insuficiente, la detección es ambigua o el seguimiento se pierde, se informa que no pudo evaluarse. No debe confundirse con una pieza desconocida.</p></article>
+ </div>
+ <div class="callout warning"><strong>Distinción importante:</strong> ausencia de coincidencias no equivale automáticamente a objeto desconocido. Primero debe existir una detección válida del objeto y evidencia suficiente para evaluar sus características.</div>
+</section>
+
+<section id="montaje">
+ <div class="kicker">02 · Diseño experimental</div><h2>Disposición física del sistema</h2>
+ <p>La cámara debe permanecer fija, centrada sobre la zona de inspección y orientada perpendicularmente al plano de la banda. Las piezas son planas y descansan directamente sobre la superficie.</p>
+ <h3>Diagrama 1. Vista superior de la banda transportadora</h3>
+ <div class="diagram">
+ <svg viewBox="0 0 900 410" role="img" aria-label="Vista superior: banda horizontal, tres piezas planas, cámara centrada, campo de visión y sentido de desplazamiento">
+  <defs>
+   <pattern id="beltTop" width="18" height="18" patternUnits="userSpaceOnUse"><path d="M0 18L18 0" stroke="#50677d" stroke-width="1" opacity=".25"/></pattern>
+   <marker id="arrTop" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#2563a6"/></marker>
+  </defs>
+  <rect x="45" y="125" width="810" height="205" rx="18" fill="#263d52"/>
+  <rect x="58" y="138" width="784" height="179" rx="12" fill="#dce5ec"/>
+  <rect x="58" y="138" width="784" height="179" rx="12" fill="url(#beltTop)"/>
+  <rect x="315" y="145" width="270" height="165" rx="9" fill="#d9eaff" fill-opacity=".55" stroke="#2563a6" stroke-width="2.5" stroke-dasharray="8 6"/>
+  <text x="450" y="164" font-size="15" text-anchor="middle" fill="#174c7e" font-weight="700">ZONA DE INSPECCIÓN</text>
+  <path d="M450 62L315 145L585 145Z" fill="#62a4df" fill-opacity=".18" stroke="#2563a6" stroke-width="2" stroke-dasharray="7 5"/>
+  <rect x="410" y="22" width="80" height="42" rx="8" fill="#183653"/>
+  <circle cx="450" cy="65" r="10" fill="#0e1721" stroke="#8bbce6" stroke-width="4"/>
+  <path d="M450 75V126" stroke="#183653" stroke-width="2" stroke-dasharray="4 4"/>
+  <text x="510" y="42" font-size="16" fill="#183653" font-weight="700">Cámara fija</text>
+  <text x="510" y="62" font-size="13" fill="#50677d">sobre el centro</text>
+  <g transform="translate(350 215)"><rect x="-32" y="-25" width="64" height="50" rx="5" fill="#f1b84b" stroke="#8a5b12" stroke-width="2"/><circle cx="-12" cy="-6" r="6" fill="#8a5b12"/><circle cx="12" cy="8" r="7" fill="#fff0c8"/><text x="0" y="43" text-anchor="middle" font-size="13" fill="#183653" font-weight="700">Pieza A</text></g>
+  <g transform="translate(450 235)"><path d="M0 -34L34 0L0 34L-34 0Z" fill="#72b7a1" stroke="#236c59" stroke-width="2"/><path d="M-18 0H18M0 -18V18" stroke="#236c59" stroke-width="3"/><text x="0" y="55" text-anchor="middle" font-size="13" fill="#183653" font-weight="700">Pieza B</text></g>
+  <g transform="translate(545 212)"><path d="M-34 -24H34V24H-34Z" fill="#b39bd8" stroke="#60458c" stroke-width="2"/><path d="M-25 -14L25 14M-25 14L25 -14" stroke="#60458c" stroke-width="3"/><text x="0" y="43" text-anchor="middle" font-size="13" fill="#183653" font-weight="700">Pieza C</text></g>
+  <path d="M110 365H785" stroke="#2563a6" stroke-width="4" marker-end="url(#arrTop)"/>
+  <text x="450" y="392" text-anchor="middle" font-size="16" fill="#2563a6" font-weight="700">Sentido de desplazamiento de las piezas</text>
+  <text x="65" y="112" font-size="13" fill="#50677d">Entrada</text><text x="805" y="112" font-size="13" fill="#50677d">Salida</text>
+ </svg>
+ <p class="caption">La zona delimitada representa el área útil donde se localizan y evalúan las piezas. El campo de visión cubre esa zona desde una cámara fija.</p>
+ </div>
+ <h3>Diagrama 2. Vista lateral de la banda transportadora</h3>
+ <div class="diagram">
+ <svg viewBox="0 0 900 360" role="img" aria-label="Vista lateral: cámara vertical, eje óptico perpendicular a la banda, piezas planas apoyadas y ángulo de 90 grados">
+  <defs><marker id="arrSide" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0L6 3L0 6Z" fill="#2563a6"/></marker></defs>
+  <rect x="90" y="260" width="720" height="22" rx="6" fill="#263d52"/>
+  <rect x="105" y="245" width="690" height="15" rx="4" fill="#b8c8d5"/>
+  <g transform="translate(280 238)"><rect x="-34" y="-17" width="68" height="17" rx="3" fill="#f1b84b" stroke="#8a5b12" stroke-width="2"/></g>
+  <g transform="translate(455 238)"><path d="M0 -27L30 0L0 0L-30 0Z" fill="#72b7a1" stroke="#236c59" stroke-width="2"/><rect x="-30" y="-1" width="60" height="8" fill="#72b7a1" stroke="#236c59" stroke-width="2"/></g>
+  <g transform="translate(640 238)"><rect x="-35" y="-18" width="70" height="18" fill="#b39bd8" stroke="#60458c" stroke-width="2"/></g>
+  <rect x="410" y="35" width="90" height="48" rx="9" fill="#183653"/>
+  <circle cx="455" cy="84" r="12" fill="#0e1721" stroke="#8bbce6" stroke-width="4"/>
+  <path d="M455 96V243" stroke="#2563a6" stroke-width="3" stroke-dasharray="8 5"/>
+  <path d="M438 225H455V242" fill="none" stroke="#16834a" stroke-width="3"/>
+  <path d="M455 112L340 245H570Z" fill="#62a4df" fill-opacity=".14" stroke="#2563a6" stroke-width="2" stroke-dasharray="7 5"/>
+  <text x="520" y="53" font-size="17" fill="#183653" font-weight="700">Cámara fija</text>
+  <text x="520" y="75" font-size="14" fill="#50677d">orientada hacia abajo</text>
+  <text x="474" y="170" font-size="15" fill="#2563a6" font-weight="700">Eje óptico</text>
+  <path d="M455 190L570 190" stroke="#16834a" stroke-width="2"/>
+  <text x="580" y="195" font-size="15" fill="#16834a" font-weight="700">90°</text>
+  <text x="455" y="305" text-anchor="middle" font-size="15" fill="#183653" font-weight="700">Plano de la banda transportadora</text>
+  <path d="M120 330H780" stroke="#2563a6" stroke-width="4" marker-end="url(#arrSide)"/>
+  <text x="450" y="352" text-anchor="middle" font-size="15" fill="#2563a6" font-weight="700">Sentido de desplazamiento</text>
+  <text x="125" y="218" font-size="13" fill="#50677d">Piezas planas apoyadas directamente</text>
+ </svg>
+ <p class="caption">El eje óptico forma un ángulo de 90° con el plano de la banda. Las piezas no están suspendidas ni colocadas verticalmente.</p>
+ </div>
+ <div class="callout good"><strong>Montaje recomendado:</strong> fijar la cámara y la iluminación para reducir vibraciones, sombras y cambios de exposición. Mantener una distancia que permita ver la pieza completa y suficiente detalle de su superficie.</div>
+ <h3>Lista de verificación del montaje</h3>
+ <p class="small">Marca cada condición después de comprobarla físicamente. El avance se actualiza automáticamente.</p>
+ <div class="progress"><div class="progressbar" id="progressbar"></div></div><p class="small" id="progressText">0 de 8 condiciones verificadas</p>
+ <div class="checklist" id="checklist">
+  <label class="check"><input type="checkbox"><span>La cámara está firmemente instalada y no se mueve durante la captura.</span></label>
+  <label class="check"><input type="checkbox"><span>El eje óptico apunta verticalmente hacia abajo y es perpendicular a la banda (90°).</span></label>
+  <label class="check"><input type="checkbox"><span>La zona de inspección completa queda dentro del campo de visión.</span></label>
+  <label class="check"><input type="checkbox"><span>Las piezas son planas y descansan directamente sobre la banda.</span></label>
+  <label class="check"><input type="checkbox"><span>Las piezas no se superponen durante las pruebas iniciales.</span></label>
+  <label class="check"><input type="checkbox"><span>La iluminación es uniforme y evita reflejos intensos y sombras pronunciadas.</span></label>
+  <label class="check"><input type="checkbox"><span>La cámara enfoca los detalles de las piezas y mantiene una exposición estable.</span></label>
+  <label class="check"><input type="checkbox"><span>La banda y la cámara están configuradas para evitar vibraciones excesivas.</span></label>
+ </div>
+</section>
+
+<section id="objetivos">
+ <div class="kicker">03 · Propósito</div><h2>Objetivo general</h2>
+ <p>Desarrollar un sistema de inspección visual en Python y OpenCV que reconozca tres tipos de piezas registradas y detecte objetos desconocidos sobre una banda transportadora mediante ORB y seguimiento con flujo óptico de Lucas-Kanade.</p>
+ <h3>Objetivos específicos</h3>
+ <ul>
+  <li>Registrar tres piezas mediante imágenes de referencia.</li>
+  <li>Extraer puntos clave y descriptores utilizando ORB.</li>
+  <li>Comparar los descriptores de los objetos observados con las tres plantillas.</li>
+  <li>Verificar las coincidencias geométricas mediante homografía y RANSAC.</li>
+  <li>Seguir la posición de las piezas mediante Lucas-Kanade.</li>
+  <li>Generar una alerta visual cuando una pieza no corresponda a ninguna categoría registrada.</li>
+ </ul>
+</section>
+
+<section id="condiciones">
+ <div class="kicker">04 · Alcance y restricciones</div><h2>Condiciones del sistema</h2>
+ <ul>
+  <li>Se utilizará una cámara fija para capturar la superficie de la banda.</li>
+  <li>Las piezas serán planas y estarán apoyadas sobre la banda.</li>
+  <li>La cámara observará las piezas perpendicularmente al plano de la banda.</li>
+  <li>Se registrarán exactamente tres tipos de piezas.</li>
+  <li>El programa comparará cada objeto detectado con las tres plantillas disponibles.</li>
+  <li>Las piezas reconocidas se delimitarán en verde y mostrarán su categoría.</li>
+  <li>Los objetos sin coincidencia válida se delimitarán en rojo y activarán una alerta, siempre que hayan podido localizarse y evaluarse.</li>
+ </ul>
+ <div class="callout"><strong>Alcance de ORB:</strong> ORB detecta puntos clave y calcula descriptores locales. Su desempeño depende de que las piezas tengan textura, bordes o detalles visuales suficientes. Una superficie lisa y sin rasgos puede producir pocos puntos clave y requerir otra estrategia de inspección.</div>
+</section>
+
+<section id="etapas">
+ <div class="kicker">05 · Procedimiento</div><h2>Desarrollo de la actividad</h2>
+ <p>Implementa el sistema por etapas. Prueba cada componente por separado antes de integrarlo.</p>
+ <div class="grid">
+  <article class="card"><h3>1. Registro de referencias</h3><p>Capturar o seleccionar tres imágenes, una por categoría. Recortar la pieza, evitar fondos complejos y conservar buena resolución. Asignar nombres como <code>pieza_A.jpg</code>, <code>pieza_B.jpg</code> y <code>pieza_C.jpg</code>.</p><p><strong>OpenCV:</strong> <code>cv2.imread()</code>, <code>cv2.cvtColor()</code>.</p></article>
+  <article class="card"><h3>2. Extracción ORB</h3><p>Convertir cada referencia a escala de grises y detectar puntos clave y descriptores. Guardar los descriptores de cada plantilla para reutilizarlos durante el video.</p><p><strong>OpenCV:</strong> <code>cv2.ORB_create()</code>, <code>detectAndCompute()</code>.</p></article>
+  <article class="card"><h3>3. Captura de video</h3><p>Abrir la cámara, comprobar que inició correctamente y leer fotogramas continuamente. Ajustar resolución y verificar el enfoque antes de procesar.</p><p><strong>OpenCV:</strong> <code>cv2.VideoCapture()</code>, <code>read()</code>, <code>cv2.imshow()</code>.</p></article>
+  <article class="card"><h3>4. Comparación de descriptores</h3><p>Comparar los descriptores del objeto localizado con los de cada plantilla. Utilizar distancia de Hamming para descriptores ORB y aplicar la prueba de razón de Lowe para filtrar coincidencias ambiguas.</p><p><strong>OpenCV:</strong> <code>cv2.BFMatcher(cv2.NORM_HAMMING)</code>, <code>knnMatch()</code>.</p></article>
+  <article class="card"><h3>5. Verificación geométrica</h3><p>Calcular una homografía entre los puntos coincidentes de la plantilla y el objeto. RANSAC descarta correspondencias incompatibles; validar cantidad y proporción de inliers y geometría del polígono proyectado.</p><p><strong>OpenCV:</strong> <code>cv2.findHomography()</code>, <code>cv2.perspectiveTransform()</code>.</p></article>
+  <article class="card"><h3>6. Seguimiento Lucas-Kanade</h3><p>Una vez localizado el objeto, seguir puntos de interés entre fotogramas para actualizar su posición sin ejecutar todo el reconocimiento desde cero en cada cuadro. Re inicializar si se pierden demasiados puntos.</p><p><strong>OpenCV:</strong> <code>cv2.goodFeaturesToTrack()</code>, <code>cv2.calcOpticalFlowPyrLK()</code>.</p></article>
+  <article class="card"><h3>7. Clasificación y alertas</h3><p>Asignar la categoría con la mejor validación si supera los umbrales establecidos. Si ninguna plantilla es válida y el objeto sí fue evaluado, marcarlo como desconocido. Si no hay evidencia suficiente, mostrar “NO EVALUABLE”.</p><p><strong>OpenCV:</strong> <code>cv2.polylines()</code>, <code>cv2.putText()</code>.</p></article>
+ </div>
+ <h3>Flujo lógico sugerido</h3>
+ <pre><code>INICIO
+  Cargar las 3 plantillas
+  Crear ORB y calcular descriptores de referencia
+  Abrir cámara
+
+  Mientras la cámara esté activa:
+      Capturar fotograma
+      Localizar objeto(s) en la zona de inspección
+
+      Para cada objeto localizado:
+          Si la imagen permite evaluarlo:
+              Calcular descriptores ORB del objeto
+              Comparar contra las 3 plantillas
+              Aplicar prueba de razón
+              Estimar homografía con RANSAC
+
+              Si una plantilla supera los criterios:
+                  Clasificar como pieza conocida
+                  Dibujar contorno VERDE y categoría
+              Si ninguna plantilla supera los criterios:
+                  Clasificar como desconocida
+                  Dibujar contorno ROJO y alerta
+          Si no puede evaluarse:
+              Mostrar "NO EVALUABLE"
+
+      Actualizar seguimiento Lucas-Kanade
+      Recuperar detección si se pierde el seguimiento
+      Mostrar resultado
+
+  Liberar cámara y cerrar ventanas
+FIN</code></pre>
+ <div class="callout warning"><strong>Decisión técnica:</strong> ORB no localiza por sí solo todos los objetos en una escena. Para comparar una pieza con una plantilla primero se necesita una región candidata (por ejemplo, mediante fondo estático, umbralización, contornos o una zona de entrada conocida). El ejercicio debe documentar cómo se obtiene esa región.</div>
+ <h3>Parámetros que deben calibrarse</h3>
+ <table><thead><tr><th>Parámetro</th><th>Función</th><th>Recomendación de prueba</th></tr></thead><tbody>
+  <tr><td><code>nfeatures</code></td><td>Número máximo aproximado de puntos ORB.</td><td>Comenzar con 500–1000 y ajustar según el detalle de las piezas.</td></tr>
+  <tr><td>Umbral de razón</td><td>Filtra coincidencias ambiguas en <code>knnMatch()</code>.</td><td>Probar valores alrededor de 0.70–0.80; documentar el valor final.</td></tr>
+  <tr><td>Inliers RANSAC</td><td>Correspondencias compatibles con la homografía.</td><td>Definir un mínimo y una proporción mínima mediante pruebas.</td></tr>
+  <tr><td>Error de reproyección</td><td>Tolerancia geométrica de la homografía.</td><td>Calibrar en píxeles según resolución y calidad de imagen.</td></tr>
+  <tr><td>Puntos Lucas-Kanade</td><td>Calidad y cantidad de puntos seguidos.</td><td>Reinicializar cuando se pierdan puntos o la calidad caiga.</td></tr>
+ </tbody></table>
+</section>
+
+<section id="resultados">
+ <div class="kicker">06 · Interfaz de inspección</div><h2>Respuesta visual esperada</h2>
+ <p>Los siguientes esquemas muestran cómo debe responder la interfaz. Los contornos son ilustrativos: en la implementación deben ajustarse a la geometría real del objeto detectado.</p>
+ <div class="grid">
+  <article class="card">
+   <h3><span class="pill green">Coincidencia válida</span></h3>
+   <div class="diagram">
+    <svg viewBox="0 0 420 245" role="img" aria-label="Pieza conocida delimitada en verde con etiqueta Pieza A">
+     <rect x="12" y="12" width="396" height="220" rx="10" fill="#e8edf1"/>
+     <path d="M30 55H390M30 190H390" stroke="#c5d0d9" stroke-width="2" stroke-dasharray="7 6"/>
+     <path d="M142 78L270 68L294 157L155 174L120 128Z" fill="#f1b84b" stroke="#8a5b12" stroke-width="3"/>
+     <circle cx="175" cy="112" r="9" fill="#8a5b12"/><circle cx="235" cy="137" r="12" fill="#fff0c8"/>
+     <path d="M110 58L281 48L315 167L147 190L98 127Z" fill="none" stroke="#16834a" stroke-width="5"/>
+     <rect x="105" y="26" width="130" height="27" rx="5" fill="#16834a"/><text x="170" y="45" text-anchor="middle" font-size="14" fill="#fff" font-weight="700">PIEZA A · OK</text>
+    </svg>
+   </div>
+   <p>Contorno verde y etiqueta con la categoría reconocida.</p>
+  </article>
+  <article class="card">
+   <h3><span class="pill red">Sin coincidencia válida</span></h3>
+   <div class="diagram">
+    <svg viewBox="0 0 420 245" role="img" aria-label="Pieza desconocida delimitada en rojo y mensaje de alerta">
+     <rect x="12" y="12" width="396" height="220" rx="10" fill="#e8edf1"/>
+     <path d="M30 55H390M30 190H390" stroke="#c5d0d9" stroke-width="2" stroke-dasharray="7 6"/>
+     <path d="M152 79L269 83L286 143L243 174L128 151L115 105Z" fill="#7c9cc2" stroke="#405c7c" stroke-width="3"/>
+     <path d="M132 62L282 65L306 150L247 193L109 164L96 99Z" fill="none" stroke="#c83232" stroke-width="5"/>
+     <rect x="52" y="22" width="316" height="31" rx="5" fill="#c83232"/><text x="210" y="43" text-anchor="middle" font-size="15" fill="#fff" font-weight="700">¡PIEZA NO IDENTIFICADA!</text>
+    </svg>
+   </div>
+   <p>Contorno rojo y alerta visual cuando el objeto pudo evaluarse y no coincide con ninguna plantilla.</p>
+  </article>
+ </div>
+ <div class="callout danger"><strong>Estado no evaluable:</strong> si el objeto está parcialmente oculto, desenfocado, fuera de la zona o no hay suficientes características para comparar, mostrar por ejemplo “NO EVALUABLE” en un color neutral/ámbar. No activar la alerta de pieza desconocida únicamente porque falló el seguimiento.</div>
+ <h3>Reglas de decisión recomendadas</h3>
+ <ol>
+  <li><strong>Localizar:</strong> obtener una región candidata que corresponda a un objeto real.</li>
+  <li><strong>Evaluar calidad:</strong> comprobar tamaño, enfoque, puntos clave y correspondencias mínimas.</li>
+  <li><strong>Comparar:</strong> evaluar las tres plantillas con el mismo procedimiento.</li>
+  <li><strong>Validar:</strong> exigir coincidencias suficientes y homografía geométricamente plausible.</li>
+  <li><strong>Decidir:</strong> conocida si una plantilla supera los criterios; desconocida si la evaluación fue válida pero ninguna coincide; no evaluable si faltó evidencia suficiente.</li>
+ </ol>
+</section>
+
+<section id="pruebas">
+ <div class="kicker">07 · Validación</div><h2>Pruebas de funcionamiento</h2>
+ <table><thead><tr><th>#</th><th>Prueba</th><th>Resultado esperado</th><th>Evidencia</th></tr></thead><tbody>
+  <tr><td>1</td><td>Reconocimiento de la primera pieza.</td><td>Etiqueta de categoría A y contorno verde.</td><td>Captura de pantalla.</td></tr>
+  <tr><td>2</td><td>Reconocimiento de la segunda pieza.</td><td>Etiqueta de categoría B y contorno verde.</td><td>Captura de pantalla.</td></tr>
+  <tr><td>3</td><td>Reconocimiento de la tercera pieza.</td><td>Etiqueta de categoría C y contorno verde.</td><td>Captura de pantalla.</td></tr>
+  <tr><td>4</td><td>Pieza diferente a las tres registradas.</td><td>Contorno rojo y alerta, si fue localizada y evaluada correctamente.</td><td>Captura de alerta.</td></tr>
+  <tr><td>5</td><td>Pieza registrada con diferente orientación dentro del plano de la banda.</td><td>Reconocimiento correcto ante rotación en el plano.</td><td>Captura en varios ángulos.</td></tr>
+  <tr><td>6</td><td>Diferentes velocidades de desplazamiento.</td><td>Seguimiento estable o estado no evaluable cuando se pierda información.</td><td>Video y observaciones.</td></tr>
+  <tr><td>7</td><td>Paso consecutivo de varias piezas.</td><td>Identificación individual sin confundir objetos cercanos.</td><td>Video de secuencia.</td></tr>
+ </tbody></table>
+ <p><strong>Para cada prueba registra:</strong> condiciones de iluminación, velocidad, orientación, categoría real, resultado del sistema, tiempo de procesamiento y observaciones.</p>
+</section>
+
+<section id="entregables">
+ <div class="kicker">08 · Productos de la actividad</div><h2>Entregables</h2>
+ <ol>
+  <li>Código fuente completo desarrollado en Python.</li>
+  <li>Tres imágenes utilizadas como plantillas de referencia.</li>
+  <li>Evidencia del reconocimiento de cada pieza registrada.</li>
+  <li>Evidencia de la detección de una pieza no identificada.</li>
+  <li>Video demostrativo del sistema en funcionamiento.</li>
+  <li>Breve explicación de los métodos utilizados para reconocimiento, verificación y seguimiento.</li>
+ </ol>
+ <div class="callout"><strong>Organización sugerida:</strong> entregar una carpeta con <code>main.py</code>, una subcarpeta <code>plantillas/</code> con las tres imágenes, una carpeta <code>evidencias/</code> y un documento breve con resultados y parámetros utilizados.</div>
+</section>
+
+<section id="evaluacion">
+ <div class="kicker">09 · Evaluación</div><h2>Criterios de evaluación</h2>
+ <table><thead><tr><th>Criterio</th><th style="width:130px">Punteo</th></tr></thead><tbody>
+  <tr><td>Registro de las tres piezas y extracción de características mediante ORB</td><td>15 puntos</td></tr>
+  <tr><td>Captura y procesamiento de video</td><td>10 puntos</td></tr>
+  <tr><td>Reconocimiento correcto de las tres piezas registradas</td><td>25 puntos</td></tr>
+  <tr><td>Detección de piezas no identificadas y generación de alertas</td><td>20 puntos</td></tr>
+  <tr><td>Seguimiento mediante Lucas-Kanade</td><td>15 puntos</td></tr>
+  <tr><td>Presentación y funcionamiento general del sistema</td><td>15 puntos</td></tr>
+  <tr><th>Total</th><th>100 puntos</th></tr>
+ </tbody></table>
+</section>
+
+<section id="reto">
+ <div class="kicker">10 · Extensión</div><h2>Reto adicional: contador de piezas</h2>
+ <p>Implementar un contador que registre cuántas piezas de cada tipo han pasado por la banda transportadora. También deberá contabilizar las piezas no identificadas, evitando contar varias veces el mismo objeto mientras permanece en la zona de inspección.</p>
+ <h3>Consideraciones de implementación</h3>
+ <ul>
+  <li>Mantener un identificador temporal por objeto seguido.</li>
+  <li>Definir una línea virtual de conteo dentro de la zona de inspección.</li>
+  <li>Incrementar el contador una sola vez cuando el centro del objeto cruce la línea en el sentido esperado.</li>
+  <li>Conservar el estado de “ya contado” mientras el objeto siga visible.</li>
+  <li>Eliminar el identificador cuando el objeto salga del área o se pierda durante un periodo definido.</li>
+  <li>Separar los contadores de categoría A, B, C y desconocidas.</li>
+ </ul>
+ <div class="grid">
+  <article class="card"><h3>Pieza A</h3><p>Contador independiente de unidades reconocidas como categoría A.</p></article>
+  <article class="card"><h3>Pieza B</h3><p>Contador independiente de unidades reconocidas como categoría B.</p></article>
+  <article class="card"><h3>Pieza C</h3><p>Contador independiente de unidades reconocidas como categoría C.</p></article>
+  <article class="card"><h3>Desconocidas</h3><p>Contador de objetos evaluados que no coinciden con ninguna plantilla.</p></article>
+ </div>
+ <div class="callout warning"><strong>Evitar doble conteo:</strong> no incrementar el contador en cada fotograma. El evento de conteo debe ocurrir una sola vez por objeto, por ejemplo, al cruzar la línea virtual. Si el seguimiento se reinicia, diseñar una estrategia para no volver a contar el mismo objeto.</div>
+</section>
+</main>
+<footer>Guía académica · Visión por computadora con Python · Python + OpenCV</footer>
+<script>
+const checks=[...document.querySelectorAll('#checklist input')];
+const bar=document.getElementById('progressbar');
+const label=document.getElementById('progressText');
+function updateProgress(){
+ const done=checks.filter(c=>c.checked).length;
+ bar.style.width=(done/checks.length*100)+'%';
+ label.textContent=done+' de '+checks.length+' condiciones verificadas';
+}
+checks.forEach(c=>c.addEventListener('change',updateProgress));
+updateProgress();
+</script>
+</body>
+</html>

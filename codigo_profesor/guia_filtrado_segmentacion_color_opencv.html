@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía didáctica: Filtrado y segmentación de color con OpenCV</title>
+<style>
+:root {
+  --ink:#172033; --muted:#5c667a; --accent:#2457c5; --accent-light:#eaf0ff;
+  --line:#dce2ec; --paper:#ffffff; --bg:#f3f5f9; --code:#111827; --green:#16794a;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.65}
+header{background:linear-gradient(135deg,#14233f,#2457c5);color:#fff;padding:54px 24px 46px}
+.hero{max-width:1100px;margin:auto}
+.eyebrow{text-transform:uppercase;letter-spacing:.13em;font-size:.78rem;font-weight:700;opacity:.82}
+h1{font-size:clamp(2rem,5vw,3.35rem);line-height:1.12;margin:.6rem 0 1rem;max-width:850px}
+header p{font-size:1.12rem;max-width:760px;color:#e5ebff;margin:0}
+.layout{max-width:1200px;margin:28px auto;padding:0 20px;display:grid;grid-template-columns:260px minmax(0,1fr);gap:26px;align-items:start}
+nav{position:sticky;top:18px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:18px;max-height:calc(100vh - 36px);overflow:auto}
+nav strong{display:block;margin-bottom:10px}
+nav a{display:block;text-decoration:none;color:#3b4860;padding:6px 8px;border-radius:7px;font-size:.91rem}
+nav a:hover{background:var(--accent-light);color:var(--accent)}
+main{min-width:0}
+section,.intro-card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:clamp(20px,3vw,34px);margin-bottom:22px;box-shadow:0 4px 14px #18274708}
+h2{font-size:1.65rem;line-height:1.25;margin:0 0 14px}
+h3{font-size:1.16rem;margin:26px 0 8px}
+h4{margin:18px 0 6px}
+p{margin:10px 0}
+.lead{font-size:1.08rem;color:#354158}
+.note{border-left:4px solid var(--accent);background:var(--accent-light);padding:13px 16px;border-radius:0 9px 9px 0;margin:16px 0}
+.warning{border-left-color:#d97706;background:#fff6e8}
+.success{border-left-color:var(--green);background:#eaf7ef}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.tile{border:1px solid var(--line);border-radius:12px;padding:16px;background:#fcfdff}
+.tile h3{margin:0 0 6px}
+.pill{display:inline-block;font-size:.78rem;font-weight:700;border-radius:99px;background:#edf1f7;padding:3px 9px;color:#43506a;margin-bottom:8px}
+pre{background:var(--code);color:#e5edf9;border-radius:12px;padding:18px;overflow:auto;font-size:.9rem;line-height:1.55;tab-size:4}
+code{font-family:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+p code,li code,td code{background:#eef1f6;color:#28344a;padding:.12em .35em;border-radius:4px;font-size:.92em}
+table{width:100%;border-collapse:collapse;margin:14px 0;font-size:.94rem}
+th,td{border:1px solid var(--line);padding:10px 12px;text-align:left;vertical-align:top}
+th{background:#f0f3f8}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:16px 0}
+.flow span{background:#edf2ff;border:1px solid #d5e0ff;color:#203e85;border-radius:8px;padding:9px 12px;font-weight:600}
+.flow b{color:#71809a}
+details{border:1px solid var(--line);border-radius:10px;margin:12px 0;padding:12px 15px}
+summary{font-weight:700;cursor:pointer}
+footer{max-width:1100px;margin:0 auto;padding:0 24px 42px;color:var(--muted);font-size:.9rem}
+.small{font-size:.9rem;color:var(--muted)}
+.checklist li{margin:.35rem 0}
+@media(max-width:850px){.layout{grid-template-columns:1fr}nav{position:static;max-height:none}.grid{grid-template-columns:1fr}}
+@media print{body{background:white}header{padding:24px;color:#111;background:white;border-bottom:2px solid #333}header p{color:#333}.layout{display:block;max-width:none;margin:0;padding:0}nav{display:none}section,.intro-card{box-shadow:none;break-inside:avoid;border:0;border-bottom:1px solid #ccc;border-radius:0;padding:20px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere}a{color:#111;text-decoration:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hero">
+    <div class="eyebrow">Guía de estudio · Python y OpenCV</div>
+    <h1>Filtrado y segmentación de color</h1>
+    <p>Guía progresiva para comprender cinco scripts: selección de colores, procesamiento de máscaras, detección de regiones, modificación de píxeles y análisis cuantitativo.</p>
+  </div>
+</header>
+
+<div class="layout">
+<nav aria-label="Índice de contenidos">
+  <strong>Contenido</strong>
+  <a href="#objetivos">Objetivos</a>
+  <a href="#fundamentos">1. Fundamentos</a>
+  <a href="#hsv">2. BGR y HSV</a>
+  <a href="#mascaras">3. Rangos y máscaras</a>
+  <a href="#script1">4. Script 1: aislar rojo</a>
+  <a href="#script2">5. Script 2: varios colores</a>
+  <a href="#script3">6. Script 3: detectar regiones</a>
+  <a href="#script4">7. Script 4: cambiar color</a>
+  <a href="#script5">8. Script 5: porcentaje</a>
+  <a href="#errores">9. Errores frecuentes</a>
+  <a href="#actividad">10. Actividad integradora</a>
+  <a href="#resumen">Resumen de funciones</a>
+</nav>
+
+<main>
+<div class="intro-card">
+  <p class="lead"><strong>¿Qué aprenderás?</strong> A entender no solo qué instrucción se utiliza, sino también qué datos recibe, qué resultado genera y cómo encaja en un flujo de procesamiento de imágenes.</p>
+  <div class="note"><strong>Requisito previo:</strong> conocer variables, condicionales, ciclos, listas o tuplas y las operaciones básicas de OpenCV para cargar, mostrar, recortar y redimensionar imágenes.</div>
+</div>
+
+<section id="objetivos">
+  <h2>Objetivos de aprendizaje</h2>
+  <ul class="checklist">
+    <li>Comprender cómo se representan los píxeles y canales de una imagen.</li>
+    <li>Diferenciar los espacios de color BGR y HSV.</li>
+    <li>Seleccionar píxeles mediante intervalos de color con <code>cv2.inRange()</code>.</li>
+    <li>Crear máscaras y utilizarlas para extraer regiones.</li>
+    <li>Localizar contornos y dibujar rectángulos delimitadores.</li>
+    <li>Modificar píxeles seleccionados y calcular estadísticas básicas.</li>
+  </ul>
+</section>
+
+<section id="fundamentos">
+  <h2>1. Fundamentos del procesamiento de imágenes</h2>
+  <h3>¿Qué es una imagen digital?</h3>
+  <p>Una imagen digital puede representarse como una matriz de píxeles. Cada píxel almacena uno o varios valores que describen su color. En una imagen a color habitual, cada píxel tiene tres canales.</p>
+  <ul>
+    <li><strong>Ancho:</strong> cantidad de píxeles horizontales.</li>
+    <li><strong>Alto:</strong> cantidad de píxeles verticales.</li>
+    <li><strong>Canales:</strong> componentes utilizados para representar el color.</li>
+  </ul>
+  <pre><code>import cv2
+
+imagen = cv2.imread("frutas.jpg")
+
+if imagen is None:
+    raise FileNotFoundError("No se encontró la imagen")
+
+print("Dimensiones:", imagen.shape)</code></pre>
+  <p><code>cv2.imread()</code> intenta cargar el archivo y devuelve una matriz de imagen. Si la ruta no existe o el archivo no se puede leer, suele devolver <code>None</code>. Por eso se comprueba el resultado antes de procesarlo.</p>
+  <p>Para una imagen a color convencional, <code>imagen.shape</code> suele tener la forma <code>(alto, ancho, 3)</code>. El tercer valor representa los tres canales.</p>
+  <div class="note"><strong>Importante:</strong> el orden de los valores de <code>shape</code> es alto, ancho y canales, no ancho, alto y canales.</div>
+  <h3>¿Qué es BGR?</h3>
+  <p>OpenCV utiliza habitualmente el orden BGR al cargar imágenes a color. Por ejemplo, el verde puro se representa con la tupla <code>(0, 255, 0)</code>. El rojo puro sería <code>(0, 0, 255)</code> y el azul puro <code>(255, 0, 0)</code>.</p>
+</section>
+
+<section id="hsv">
+  <h2>2. Conversión de BGR a HSV</h2>
+  <p>Seleccionar colores directamente en BGR puede resultar poco intuitivo porque los tres canales representan intensidades de color. HSV separa el tono, la saturación y el valor, lo que facilita definir rangos aproximados de un color.</p>
+  <div class="grid">
+    <div class="tile"><h3>H — Hue / tono</h3><p>Representa la familia de color, como rojo, verde o azul.</p></div>
+    <div class="tile"><h3>S — Saturation / saturación</h3><p>Representa la intensidad o pureza del color. Valores bajos tienden a colores apagados o grises.</p></div>
+    <div class="tile"><h3>V — Value / valor</h3><p>Representa la intensidad luminosa del color en el modelo HSV.</p></div>
+    <div class="tile"><h3>¿Por qué HSV?</h3><p>Permite definir intervalos de tono y restringir saturación o luminosidad para excluir algunos píxeles no deseados.</p></div>
+  </div>
+  <pre><code>hsv = cv2.cvtColor(
+    imagen,
+    cv2.COLOR_BGR2HSV
+)</code></pre>
+  <p><code>cv2.cvtColor()</code> transforma la imagen de un espacio de color a otro. <code>cv2.COLOR_BGR2HSV</code> indica que la entrada está en BGR y se desea convertir a HSV. La variable <code>hsv</code> almacena la imagen transformada.</p>
+  <div class="note warning"><strong>Precaución:</strong> en OpenCV, cuando HSV se representa con 8 bits, H suele ir de 0 a 179, mientras que S y V van de 0 a 255. Los rangos no son universales: deben probarse con las imágenes utilizadas.</div>
+</section>
+
+<section id="mascaras">
+  <h2>3. Rangos de color y máscaras</h2>
+  <h3>Definir un intervalo</h3>
+  <pre><code>inferior = (35, 70, 50)
+superior = (85, 255, 255)
+
+mascara = cv2.inRange(
+    hsv,
+    inferior,
+    superior
+)</code></pre>
+  <p>Las tuplas establecen los límites inferior y superior de los canales HSV. <code>cv2.inRange()</code> examina cada píxel y genera una máscara: los píxeles que están dentro de todos los intervalos quedan blancos (255); los que quedan fuera, negros (0).</p>
+  <h3>Utilizar la máscara para extraer el color</h3>
+  <pre><code>resultado = cv2.bitwise_and(
+    imagen,
+    imagen,
+    mask=mascara
+)</code></pre>
+  <p>La máscara indica qué píxeles conservar. Donde la máscara es blanca, se conserva el píxel original; donde es negra, el resultado queda negro. La operación no reconoce el objeto: solo aplica la selección definida por la máscara.</p>
+  <div class="flow">
+    <span>Cargar imagen</span><b>→</b><span>Convertir a HSV</span><b>→</b><span>Definir rango</span><b>→</b><span>Crear máscara</span><b>→</b><span>Extraer píxeles</span>
+  </div>
+  <h3>¿Es obligatorio utilizar NumPy?</h3>
+  <p>No siempre. En funciones como <code>cv2.inRange()</code> pueden utilizarse tuplas para especificar los límites. NumPy resulta especialmente útil cuando se realizan operaciones matemáticas con matrices o se desea seleccionar muchos píxeles simultáneamente.</p>
+</section>
+
+<section id="script1">
+  <h2>4. Script 1 — Aislar un color rojo</h2>
+  <p><strong>Objetivo:</strong> conservar en la imagen los píxeles que corresponden aproximadamente al rojo y generar una máscara de selección.</p>
+  <h3>¿Por qué se utilizan dos rangos?</h3>
+  <p>El tono rojo se encuentra cerca de ambos extremos de la escala circular de H. Por eso un solo intervalo puede no capturar todos los rojos. Se crean dos máscaras y luego se combinan.</p>
+  <pre><code># Rango rojo cercano al inicio de H
+inferior1 = (0, 100, 80)
+superior1 = (10, 255, 255)
+
+# Rango rojo cercano al final de H
+inferior2 = (170, 100, 80)
+superior2 = (179, 255, 255)
+
+mascara1 = cv2.inRange(
+    hsv, inferior1, superior1
+)
+mascara2 = cv2.inRange(
+    hsv, inferior2, superior2
+)
+
+mascara = cv2.bitwise_or(
+    mascara1, mascara2
+)
+
+resultado = cv2.bitwise_and(
+    imagen, imagen, mask=mascara
+)</code></pre>
+  <h3>La función `cv2.bitwise_or()`</h3>
+  <p>Combina las máscaras de modo que un píxel queda seleccionado si aparece como blanco en cualquiera de ellas. Así se unen los dos intervalos rojos.</p>
+  <h3>Visualizar y guardar</h3>
+  <pre><code>cv2.imshow("Original", imagen)
+cv2.imshow("Mascara roja", mascara)
+cv2.imshow("Resultado", resultado)
+
+cv2.imwrite("resultado_rojo.jpg", resultado)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+  <ul>
+    <li><code>cv2.imshow()</code> muestra una ventana con la imagen.</li>
+    <li><code>cv2.imwrite()</code> intenta guardar el resultado en un archivo.</li>
+    <li><code>cv2.waitKey(0)</code> espera hasta que se pulse una tecla.</li>
+    <li><code>cv2.destroyAllWindows()</code> cierra las ventanas creadas por OpenCV.</li>
+  </ul>
+  <div class="note"><strong>Para comprobar:</strong> ¿qué sucedería si se aumenta el límite inferior de saturación? ¿Qué objetos rojos podrían dejar de detectarse?</div>
+</section>
+
+<section id="script2">
+  <h2>5. Script 2 — Detectar varios colores</h2>
+  <p><strong>Objetivo:</strong> aplicar el mismo proceso a distintos rangos de color sin repetir todo el código manualmente.</p>
+  <h3>Organizar los rangos en un diccionario</h3>
+  <pre><code>colores = {
+    "verde": (
+        (35, 70, 50),
+        (85, 255, 255)
+    ),
+    "azul": (
+        (90, 70, 50),
+        (130, 255, 255)
+    ),
+    "amarillo": (
+        (20, 100, 100),
+        (35, 255, 255)
+    )
+}</code></pre>
+  <p>En este diccionario, cada clave es el nombre del color y su valor contiene dos tuplas: los límites inferior y superior. Los valores son aproximados y deben ajustarse para la fotografía concreta.</p>
+  <h3>Recorrer los colores con un ciclo</h3>
+  <pre><code>for nombre, (inferior, superior) in colores.items():
+    mascara = cv2.inRange(
+        hsv, inferior, superior
+    )
+
+    resultado = cv2.bitwise_and(
+        imagen, imagen, mask=mascara
+    )
+
+    cv2.imshow("Mascara " + nombre, mascara)
+    cv2.imshow("Objetos " + nombre, resultado)
+
+    cv2.imwrite("mascara_" + nombre + ".jpg", mascara)
+    cv2.imwrite("objetos_" + nombre + ".jpg", resultado)
+
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+  <p><code>colores.items()</code> permite recorrer pares de clave y valor. En cada vuelta, <code>nombre</code> recibe el nombre del color y las variables <code>inferior</code> y <code>superior</code> reciben sus límites. El ciclo crea y guarda una máscara y un resultado para cada color.</p>
+  <div class="note success"><strong>Ventaja:</strong> si se agrega un nuevo color al diccionario, el mismo ciclo puede procesarlo sin duplicar las instrucciones de filtrado.</div>
+  <h3>Preguntas de análisis</h3>
+  <ul>
+    <li>¿Por qué conviene reutilizar el mismo código dentro de un ciclo?</li>
+    <li>¿Qué sucede si dos rangos se superponen?</li>
+    <li>¿Por qué una máscara puede seleccionar partes del fondo del mismo color?</li>
+  </ul>
+</section>
+
+<section id="script3">
+  <h2>6. Script 3 — Detectar regiones y dibujar rectángulos</h2>
+  <p><strong>Objetivo:</strong> pasar de una máscara de píxeles a regiones delimitadas que puedan contarse y anotarse.</p>
+  <h3>Encontrar contornos</h3>
+  <pre><code>contornos, jerarquia = cv2.findContours(
+    mascara,
+    cv2.RETR_EXTERNAL,
+    cv2.CHAIN_APPROX_SIMPLE
+)</code></pre>
+  <ul>
+    <li><code>mascara</code>: imagen binaria que se analiza.</li>
+    <li><code>cv2.RETR_EXTERNAL</code>: recupera los contornos externos.</li>
+    <li><code>cv2.CHAIN_APPROX_SIMPLE</code>: comprime puntos redundantes de los contornos.</li>
+    <li><code>contornos</code>: colección de contornos encontrados.</li>
+    <li><code>jerarquia</code>: información sobre relaciones entre contornos; puede ser <code>None</code> si no hay contornos.</li>
+  </ul>
+  <p>Un contorno describe el límite de una región blanca de la máscara. No determina por sí mismo si la región es una pelota, una fruta o cualquier otro objeto.</p>
+  <h3>Filtrar por área y calcular el rectángulo</h3>
+  <pre><code>resultado = imagen.copy()
+contador = 0
+
+for contorno in contornos:
+    area = cv2.contourArea(contorno)
+
+    if area < 300:
+        continue
+
+    x, y, ancho, alto = cv2.boundingRect(contorno)
+    contador += 1
+
+    cv2.rectangle(
+        resultado,
+        (x, y),
+        (x + ancho, y + alto),
+        (0, 255, 0),
+        2
+    )
+
+    cv2.putText(
+        resultado,
+        "Objeto " + str(contador),
+        (x, max(y - 10, 20)),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (0, 255, 0),
+        2
+    )</code></pre>
+  <p><code>cv2.contourArea()</code> calcula el área aproximada de un contorno. La condición <code>if area &lt; 300</code> ignora regiones pequeñas, que podrían ser ruido. El valor 300 es ilustrativo y debe ajustarse según la resolución y el tamaño de los objetos.</p>
+  <p><code>cv2.boundingRect()</code> devuelve la coordenada horizontal <code>x</code>, la vertical <code>y</code>, el ancho y el alto del rectángulo que encierra la región. <code>cv2.rectangle()</code> dibuja ese rectángulo y <code>cv2.putText()</code> añade una etiqueta.</p>
+  <div class="note warning"><strong>Limitación:</strong> si dos objetos del mismo color se tocan, pueden formar una única región y recibir un solo rectángulo. La calidad de la detección depende de la máscara.</div>
+  <h3>Terminar el programa</h3>
+  <pre><code>print("Regiones detectadas:", contador)
+cv2.imshow("Mascara", mascara)
+cv2.imshow("Objetos detectados", resultado)
+cv2.waitKey(0)
+cv2.destroyAllWindows()</code></pre>
+</section>
+
+<section id="script4">
+  <h2>7. Script 4 — Cambiar el color de una región</h2>
+  <p><strong>Objetivo:</strong> modificar solo los píxeles seleccionados por una máscara, conservando el resto de la imagen.</p>
+  <h3>Crear una copia</h3>
+  <pre><code>resultado = imagen.copy()</code></pre>
+  <p><code>.copy()</code> crea una copia independiente de los datos de la imagen. De esta manera, se conserva la imagen original para comparar resultados o reutilizarla.</p>
+  <h3>Seleccionar píxeles mediante una condición</h3>
+  <pre><code>resultado[mascara > 0] = [255, 0, 0]</code></pre>
+  <p>Esta instrucción utiliza indexación booleana de NumPy. La expresión <code>mascara &gt; 0</code> crea una selección de posiciones donde la máscara es distinta de cero. En esas posiciones se asigna el color azul BGR <code>[255, 0, 0]</code>.</p>
+  <p>NumPy no es necesario para todas las operaciones básicas de OpenCV, pero sí resulta muy práctico para seleccionar y modificar muchos píxeles con una sola instrucción.</p>
+  <h3>¿Qué limitación tiene este método?</h3>
+  <p>Todos los píxeles seleccionados reciben el mismo azul uniforme. Se pierden las variaciones de sombras y reflejos del objeto. Una alternativa más avanzada consiste en modificar el tono en HSV y conservar en lo posible la saturación y el valor originales.</p>
+  <div class="note"><strong>Reto:</strong> permite que el usuario seleccione el color de origen y el de destino. Compara el resultado de asignar un color uniforme con una transformación del canal H.</div>
+</section>
+
+<section id="script5">
+  <h2>8. Script 5 — Calcular el porcentaje de color</h2>
+  <p><strong>Objetivo:</strong> convertir una máscara en una medición numérica que permita comparar imágenes o regiones.</p>
+  <h3>Contar los píxeles</h3>
+  <pre><code>total_pixeles = imagen.shape[0] * imagen.shape[1]
+
+pixeles_verdes = cv2.countNonZero(mascara)</code></pre>
+  <p><code>imagen.shape[0]</code> corresponde al alto y <code>imagen.shape[1]</code> al ancho. Al multiplicarlos se obtiene el número total de píxeles. <code>cv2.countNonZero()</code> cuenta los píxeles de la máscara cuyo valor no es cero; en una máscara binaria, estos suelen ser los blancos.</p>
+  <h3>Calcular el porcentaje</h3>
+  <pre><code>porcentaje = (
+    pixeles_verdes / total_pixeles
+) * 100
+
+print("Porcentaje:", round(porcentaje, 2), "%")</code></pre>
+  <p>Si la imagen tiene 100 000 píxeles y 15 000 cumplen el rango de color, el porcentaje es <code>(15000 / 100000) * 100 = 15%</code>.</p>
+  <div class="note warning"><strong>Interpretación correcta:</strong> el resultado es el porcentaje de píxeles seleccionados por la máscara. No representa necesariamente el porcentaje de superficie física ocupado por un objeto; la perspectiva, el fondo, las sombras y los errores de segmentación influyen en la medida.</div>
+  <h3>Mostrar el resultado en la imagen</h3>
+  <pre><code>resultado = imagen.copy()
+
+cv2.putText(
+    resultado,
+    f"Color: {porcentaje:.2f}%",
+    (20, 40),
+    cv2.FONT_HERSHEY_SIMPLEX,
+    1,
+    (0, 255, 0),
+    2
+)</code></pre>
+  <p>La f-string <code>f"Color: {porcentaje:.2f}%"</code> inserta el valor de la variable con dos cifras decimales. La posición <code>(20, 40)</code> corresponde al punto inicial del texto.</p>
+</section>
+
+<section id="errores">
+  <h2>9. Errores frecuentes y cómo diagnosticarlos</h2>
+  <table>
+    <thead><tr><th>Problema</th><th>Posible causa</th><th>Qué revisar</th></tr></thead>
+    <tbody>
+      <tr><td>No se abre la imagen</td><td>Ruta incorrecta o archivo no legible.</td><td>Comprobar <code>imagen is None</code> y la ubicación del archivo.</td></tr>
+      <tr><td>Se selecciona el color equivocado</td><td>Confusión entre BGR y HSV o límites inadecuados.</td><td>Verificar la conversión y ajustar los rangos.</td></tr>
+      <tr><td>La máscara incluye el fondo</td><td>El fondo tiene colores similares al objeto.</td><td>Restringir el rango o probar otra imagen/iluminación.</td></tr>
+      <tr><td>Aparecen demasiados rectángulos</td><td>Ruido o regiones pequeñas en la máscara.</td><td>Revisar el área mínima y la calidad de la segmentación.</td></tr>
+      <tr><td>Varios objetos reciben un rectángulo</td><td>Sus regiones están conectadas en la máscara.</td><td>Revisar si se tocan o si se requiere separar las regiones.</td></tr>
+      <tr><td>El color cambiado parece artificial</td><td>Se sustituyeron los píxeles por un único valor.</td><td>Considerar modificar el tono conservando otros canales.</td></tr>
+      <tr><td>El porcentaje no coincide con la superficie visible</td><td>La máscara selecciona píxeles del fondo o deja píxeles fuera.</td><td>Evaluar la máscara y explicar sus limitaciones.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="actividad">
+  <h2>10. Actividad integradora</h2>
+  <p><strong>Reto:</strong> construir un analizador de objetos por color a partir de una fotografía que contenga objetos de al menos dos colores distinguibles.</p>
+  <h3>Requisitos funcionales</h3>
+  <ol>
+    <li>Cargar y validar una imagen.</li>
+    <li>Convertirla a HSV.</li>
+    <li>Definir dos rangos de color.</li>
+    <li>Generar una máscara para cada color.</li>
+    <li>Extraer las regiones seleccionadas.</li>
+    <li>Encontrar los contornos de las máscaras.</li>
+    <li>Ignorar regiones menores que un área mínima.</li>
+    <li>Dibujar rectángulos y etiquetas sobre una copia de la imagen.</li>
+    <li>Calcular el porcentaje de píxeles de cada color.</li>
+    <li>Guardar los resultados y mostrar un resumen en consola.</li>
+  </ol>
+  <h3>Criterios de evaluación sugeridos</h3>
+  <table>
+    <thead><tr><th>Criterio</th><th>Ponderación</th></tr></thead>
+    <tbody>
+      <tr><td>Carga y validación de imagen</td><td>10 %</td></tr>
+      <tr><td>Conversión de color y rangos adecuados</td><td>20 %</td></tr>
+      <tr><td>Creación y uso correcto de máscaras</td><td>20 %</td></tr>
+      <tr><td>Detección de regiones y anotaciones</td><td>20 %</td></tr>
+      <tr><td>Cálculos e interpretación de resultados</td><td>15 %</td></tr>
+      <tr><td>Organización del código y explicación técnica</td><td>15 %</td></tr>
+    </tbody>
+  </table>
+  <div class="note success"><strong>Entrega esperada:</strong> código fuente, imagen original, máscaras, imagen anotada y una breve explicación de los rangos utilizados, los errores observados y las limitaciones del método.</div>
+</section>
+
+<section id="resumen">
+  <h2>Resumen de funciones y métodos</h2>
+  <table>
+    <thead><tr><th>Función o método</th><th>Propósito</th></tr></thead>
+    <tbody>
+      <tr><td><code>cv2.imread()</code></td><td>Cargar una imagen desde un archivo.</td></tr>
+      <tr><td><code>cv2.cvtColor()</code></td><td>Convertir una imagen entre espacios de color.</td></tr>
+      <tr><td><code>cv2.inRange()</code></td><td>Crear una máscara según límites de valores.</td></tr>
+      <tr><td><code>cv2.bitwise_or()</code></td><td>Combinar máscaras usando una operación OR.</td></tr>
+      <tr><td><code>cv2.bitwise_and()</code></td><td>Aplicar una máscara para conservar píxeles seleccionados.</td></tr>
+      <tr><td><code>cv2.findContours()</code></td><td>Encontrar contornos en una imagen binaria.</td></tr>
+      <tr><td><code>cv2.contourArea()</code></td><td>Calcular el área de un contorno.</td></tr>
+      <tr><td><code>cv2.boundingRect()</code></td><td>Obtener el rectángulo delimitador de un contorno.</td></tr>
+      <tr><td><code>cv2.rectangle()</code></td><td>Dibujar un rectángulo en una imagen.</td></tr>
+      <tr><td><code>cv2.putText()</code></td><td>Dibujar texto sobre una imagen.</td></tr>
+      <tr><td><code>cv2.countNonZero()</code></td><td>Contar elementos no nulos de una matriz o máscara.</td></tr>
+      <tr><td><code>cv2.imwrite()</code></td><td>Guardar una imagen en un archivo.</td></tr>
+      <tr><td><code>imagen.copy()</code></td><td>Crear una copia independiente de la imagen.</td></tr>
+      <tr><td><code>imagen.shape</code></td><td>Consultar las dimensiones de la imagen.</td></tr>
+    </tbody>
+  </table>
+  <h3>Ideas clave para recordar</h3>
+  <ul>
+    <li>El filtrado por color selecciona píxeles según rangos definidos; no identifica automáticamente la categoría semántica de un objeto.</li>
+    <li>La calidad de la máscara condiciona las etapas posteriores.</li>
+    <li>Los contornos permiten analizar regiones, pero regiones conectadas pueden representar varios objetos.</li>
+    <li>Los resultados deben evaluarse con distintas imágenes y condiciones de iluminación.</li>
+  </ul>
+</section>
+</main>
+</div>
+<footer>
+  <p>Guía didáctica de apoyo para prácticas de visión por computadora con Python y OpenCV. Los rangos de color incluidos son ejemplos iniciales y deben calibrarse con las imágenes reales.</p>
+  <p>Referencia recomendada: documentación oficial de OpenCV sobre <a href="https://docs.opencv.org/4.x/df/d9d/tutorial_py_colorspaces.html">espacios de color</a> y <a href="https://docs.opencv.org/4.x/da/d97/tutorial_threshold_inRange.html">segmentación con inRange()</a>.</p>
+</footer>
+</body>
+</html>

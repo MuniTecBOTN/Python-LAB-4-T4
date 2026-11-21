@@ -4,4 +4,4 @@ MATRIZ = [["A", "B", "C"],
 
 
 print(MATRIZ)
-print(MATRIZ[1,2])
+print([1,2])

@@ -1,0 +1,224 @@
+import cv2
+import numpy as np
+<<<<<<< HEAD
+<<<<<<< HEAD
+objeto = "objeto_negro1"
+=======
+objeto = "telefono encendido"
+>>>>>>> ae81c6305f0f0ad8edae57dbcacb1f46bbdee393
+=======
+
+objeto = "objeto"
+
+>>>>>>> 6b67df424f38fd6f232a33324351b50054fefaa2
+# Cargar imagen de referencia
+plantilla = cv2.imread(f"{objeto}.jpg")
+
+if plantilla is None:
+    raise FileNotFoundError(f"No se encontro {objeto}.jpg")
+
+# Convertir plantilla a escala de grises
+plantilla_gris = cv2.cvtColor(
+    plantilla, cv2.COLOR_BGR2GRAY
+)
+
+# Crear detector ORB optimizado
+orb = cv2.ORB_create(
+    nfeatures=1000,
+    scaleFactor=1.2,
+    nlevels=8,
+    fastThreshold=20
+)
+
+# Detectar puntos caracteristicos de la plantilla
+puntos_plantilla, descriptores_plantilla = orb.detectAndCompute(
+    plantilla_gris, None
+)
+
+if descriptores_plantilla is None:
+    raise ValueError("No se encontraron caracteristicas en la plantilla.")
+
+# Dibujar puntos caracteristicos de la plantilla
+plantilla_puntos = cv2.drawKeypoints(
+    plantilla,
+    puntos_plantilla,
+    None,
+    color=(0, 255, 0),
+<<<<<<< HEAD
+    flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT
+=======
+    flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+>>>>>>> 6b67df424f38fd6f232a33324351b50054fefaa2
+)
+
+# Crear comparador de descriptores
+comparador = cv2.BFMatcher(cv2.NORM_HAMMING)
+
+# Obtener dimensiones de la plantilla
+alto, ancho = plantilla_gris.shape
+
+# Definir esquinas de la plantilla
+esquinas = np.float32([
+    [0, 0],
+    [ancho - 1, 0],
+    [ancho - 1, alto - 1],
+    [0, alto - 1]
+]).reshape(-1, 1, 2)
+
+<<<<<<< HEAD
+# Activar camara
+=======
+# Activar camara principal
+>>>>>>> 6b67df424f38fd6f232a33324351b50054fefaa2
+camara = cv2.VideoCapture(0)
+
+if not camara.isOpened():
+    raise RuntimeError("No se pudo abrir la camara.")
+
+# Configurar resolucion
+camara.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+camara.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+# Parametros de deteccion precisos
+umbral_coincidencia = 0.75
+minimo_coincidencias = 10
+minimo_inliers = 7
+
+try:
+    while True:
+        exito, fotograma = camara.read()
+        
+        if not exito:
+            print("No se pudo capturar el fotograma.")
+            break
+        
+        fotograma = cv2.resize(fotograma, (640, 480))
+        fotograma_intermedio = fotograma.copy()
+
+        # Convertir fotograma a escala de grises
+        fotograma_gris = cv2.cvtColor(
+            fotograma, cv2.COLOR_BGR2GRAY
+        )
+
+        # Detectar puntos caracteristicos en el fotograma
+        puntos_fotograma, descriptores_fotograma = orb.detectAndCompute(
+            fotograma_gris, None
+        )
+
+        # Mostrar puntos detectados en el fotograma
+        fotograma_intermedio = cv2.drawKeypoints(
+            fotograma,
+            puntos_fotograma,
+            None,
+            color=(0, 255, 0),
+<<<<<<< HEAD
+            flags=cv2.DRAW_MATCHES_FLAGS_DEFAULT
+=======
+            flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
+>>>>>>> 6b67df424f38fd6f232a33324351b50054fefaa2
+        )
+
+        coincidencias_buenas = []
+
+        if descriptores_fotograma is not None:
+            pares = comparador.knnMatch(
+                descriptores_plantilla,
+                descriptores_fotograma,
+                k=2
+            )
+
+            # Test de Lowe
+            for par in pares:
+                if len(par) == 2:
+                    mejor, segundo = par
+                    if mejor.distance < umbral_coincidencia * segundo.distance:
+                        coincidencias_buenas.append(mejor)
+
+        if len(coincidencias_buenas) >= minimo_coincidencias:
+            puntos_origen = np.float32([
+                puntos_plantilla[m.queryIdx].pt
+                for m in coincidencias_buenas
+            ]).reshape(-1, 1, 2)
+
+            puntos_destino = np.float32([
+                puntos_fotograma[m.trainIdx].pt
+                for m in coincidencias_buenas
+            ]).reshape(-1, 1, 2)
+
+            # Calcular homografía con RANSAC
+            homografia, mascara = cv2.findHomography(
+                puntos_origen,
+                puntos_destino,
+                cv2.RANSAC,
+                3.0
+            )
+
+            if homografia is not None and mascara is not None:
+                inliers = int(mascara.sum())
+
+                if inliers >= minimo_inliers:
+                    # Transformar esquinas de la plantilla
+                    esquinas_transformadas = cv2.perspectiveTransform(
+                        esquinas,
+                        homografia
+                    )
+
+                    # Dibujar contorno del objeto detectado
+                    cv2.polylines(
+                        fotograma_intermedio,
+                        [np.int32(esquinas_transformadas)],
+                        True,
+                        (0, 255, 0),
+                        3
+                    )
+
+                    cv2.putText(
+                        fotograma_intermedio,
+                        "OBJETO RECONOCIDO",
+                        (20, 35),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7,
+                        (0, 255, 0),
+                        2
+                    )
+                else:
+                    cv2.putText(
+                        fotograma_intermedio,
+                        "BUSCANDO OBJETO...",
+                        (20, 35),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.7,
+                        (0, 0, 255),
+                        2
+                    )
+            else:
+                cv2.putText(
+                    fotograma_intermedio,
+                    "BUSCANDO OBJETO...",
+                    (20, 35),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.7,
+                    (0, 0, 255),
+                    2
+                )
+        else:
+            cv2.putText(
+                fotograma_intermedio,
+                "BUSCANDO OBJETO...",
+                (20, 35),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 0, 255),
+                2
+            )
+
+        # Mostrar las ventanas
+        cv2.imshow("1. Plantilla - Puntos ORB", plantilla_puntos)
+        cv2.imshow("2. Fotograma intermedio - Puntos ORB", fotograma_intermedio)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+finally:
+    camara.release()
+    cv2.destroyAllWindows()
