@@ -55,8 +55,13 @@ cv2.putText(
     2
 
 )
+<<<<<<< Updated upstream
 #Escala de color de la imagen
 ImgaenEscalaGris = cv2.cvtColor(ImagenAnotada, cv2.COLOR_BGR2YUV)
+=======
+
+#ImgaenEscalaGris = cv2.cvtColor(ImagenAnotada, cv2.COLOR_BGR2YUV_Y422)
+>>>>>>> Stashed changes
 
 cv2.imwrite("imagen_anotada.jpg", ImagenAnotada)
 
@@ -66,7 +71,11 @@ cv2.imwrite("imagen_anotada.jpg", ImagenAnotada)
 cv2.imshow("Imagen Reducida", Reduccion)
 #cv2.imshow("Imagen Rotada", Rotacion)
 #cv2.imshow("Imagen Rotada 2", ImagenRotada)
+<<<<<<< Updated upstream
 #cv2.imshow("Imagen Anotada", ImagenAnotada)
+=======
+cv2.imshow("Imagen Anotada", ImagenAnotada)
+>>>>>>> Stashed changes
 #cv2.imshow("Imagen Filtro", ImgaenEscalaGris)
 
 cv2.waitKey(0)
