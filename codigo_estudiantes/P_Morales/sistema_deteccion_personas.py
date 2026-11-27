@@ -9,7 +9,7 @@ from ultralytics import YOLO
 # CONFIGURACION DEL SISTEMA
 # ==========================================
 
-ID_CAMARA = 0
+ID_CAMARA = 1
 
 MODELO_YOLO = "yolov8n.pt"
 
