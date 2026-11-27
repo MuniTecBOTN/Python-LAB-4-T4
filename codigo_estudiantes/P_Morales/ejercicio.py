@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import os
 
+# Configuración de parámetros
 
 TOTAL_OBJETOS = 3
 FORMATO_NOMBRES = "imagen_{}.jpg"
