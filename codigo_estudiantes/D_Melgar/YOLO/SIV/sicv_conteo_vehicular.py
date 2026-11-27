@@ -25,13 +25,11 @@ from PySide6.QtWidgets import (
 )
 
 
-
-
-
 BASE_DIR = Path(__file__).resolve().parent
 
 SOURCE_MODE = "video"
 VIDEO_PATH = str(BASE_DIR / "trafico_prueba.mp4")
+STREAM_URL = "rtsp://usuario:clave@192.168.1.100:554/stream1"
 LOOP_VIDEO = True
 
 CAMERA_INDEX = 1
@@ -83,8 +81,12 @@ CLASS_BOX_COLORS = {
     7: (255, 90, 90),
 }
 
-STOPPED_MOVE_TOLERANCE_PX = 14.0
-STOPPED_SECONDS_THRESHOLD = 8.0
+# Parámetros mejorados para evitar falsas alertas por tráfico
+STOPPED_MOVE_TOLERANCE_PX = 18.0
+STOPPED_SECONDS_THRESHOLD = 25.0
+TRAFFIC_JAM_MIN_STOPPED = 3
+ALERT_COOLDOWN_SECONDS = 15.0
+
 
 def crear_tracker_trafico_yaml() -> str:
     yaml_content = """tracker_type: bytetrack
@@ -301,6 +303,7 @@ class VideoWorker(QThread):
         source_mode="video",
         video_path="",
         camera_index=0,
+        stream_url="",
         loop_video=True,
         model_path=MODEL_PATH,
         img_size=IMG_SIZE,
@@ -312,6 +315,7 @@ class VideoWorker(QThread):
         self.source_mode = source_mode
         self.video_path = video_path
         self.camera_index = camera_index
+        self.stream_url = stream_url
         self.loop_video = loop_video
         self.model_path = model_path
         self.img_size = img_size
@@ -331,8 +335,18 @@ class VideoWorker(QThread):
         self.previous_points = {}
         self.frame_number = 0
         self.auto_detect_stopped = True
+        self.stopped_seconds_threshold = STOPPED_SECONDS_THRESHOLD
+        self.ignore_traffic_jam = True
+        self.last_alert_time = 0.0
         self.track_motion_state = {}
         self.reported_stopped_tracks = set()
+
+    def _descripcion_fuente(self) -> str:
+        if self.source_mode == "video":
+            return self.video_path
+        if self.source_mode == "rtsp":
+            return self.stream_url
+        return f"Webcam índice {self.camera_index}"
 
     def obtener_ultimos_fotogramas(self):
         with self._latest_frames_lock:
@@ -347,7 +361,7 @@ class VideoWorker(QThread):
         if self.incident_store is None:
             raise RuntimeError("El registro de incidencias no está inicializado.")
         original, anotado = self.obtener_ultimos_fotogramas()
-        fuente = self.video_path if self.source_mode == "video" else f"Webcam índice {self.camera_index}"
+        fuente = self._descripcion_fuente()
         record = self.incident_store.registrar(
             original, anotado, tipo_evento, zona, fuente,
             track_id, confianza, duracion_segundos, observaciones
@@ -375,6 +389,14 @@ class VideoWorker(QThread):
         with self._lock:
             self.auto_detect_stopped = bool(enabled)
 
+    def set_stopped_threshold(self, seconds: float):
+        with self._lock:
+            self.stopped_seconds_threshold = float(seconds)
+
+    def set_ignore_traffic_jam(self, enabled: bool):
+        with self._lock:
+            self.ignore_traffic_jam = bool(enabled)
+
     def reset_counts_data(self):
         with self._lock:
             self.counts.clear()
@@ -398,13 +420,16 @@ class VideoWorker(QThread):
 
         if self.source_mode == "rtsp":
             if not self.stream_url:
-                return None, "Especifica una URL RTSP o HTTP válida para la cámara."
+                return None, "Especifica una URL RTSP o HTTP válida para la cámara de seguridad."
             if sys.platform.startswith("win"):
                 cap = cv2.VideoCapture(self.stream_url, cv2.CAP_FFMPEG)
             else:
                 cap = cv2.VideoCapture(self.stream_url)
             if not cap.isOpened():
-                return None, f"No se pudo conectar al flujo de la cámara: {self.stream_url}"
+                return None, (
+                    f"No se pudo conectar a la cámara de seguridad: {self.stream_url}. "
+                    "Verifica la IP, puerto, usuario, contraseña y que estés en la misma red."
+                )
             cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             return cap, None
 
@@ -427,7 +452,7 @@ class VideoWorker(QThread):
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAM_WIDTH)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAM_HEIGHT)
         return cap, None
-    
+
     def run(self):
         cap = None
         try:
@@ -450,10 +475,12 @@ class VideoWorker(QThread):
             fps = cap.get(cv2.CAP_PROP_FPS)
             frame_delay_ms = int(1000 / fps) if (is_video_file and fps and fps > 1) else 15
 
-            if is_video_file:
+            if self.source_mode == "video":
                 self.status_ready.emit(f"Reproduciendo video: {self.video_path}")
+            elif self.source_mode == "rtsp":
+                self.status_ready.emit("Cámara IP/RTSP conectada. Conteo en ejecución.")
             else:
-                self.status_ready.emit("Cámara conectada. Conteo en ejecución.")
+                self.status_ready.emit("Cámara web conectada. Conteo en ejecución.")
 
             while self._running:
                 ok, frame = cap.read()
@@ -489,6 +516,8 @@ class VideoWorker(QThread):
                 base_conf = min(thresholds.values())
 
                 detections = []
+                is_traffic_jam = False
+
                 if self.frame_number % INFER_EVERY_N_FRAMES == 0:
                     results = self._model.track(
                         source=infer_frame,
@@ -531,14 +560,21 @@ class VideoWorker(QThread):
                                     (x1, y1, x2, y2, anchor, cls_id, conf, int(track_id))
                                 )
 
-                                now_mono = time.monotonic()
-                                is_stopped_now = False
-                                stopped_elapsed = 0.0
+                            now_mono = time.monotonic()
+                            active_ids = set()
+                            stopped_candidates = []
 
-                                with self._lock:
-                                    state = self.track_motion_state.get(int(track_id))
+                            with self._lock:
+                                threshold_sec = self.stopped_seconds_threshold
+                                ignore_jam = self.ignore_traffic_jam
+                                auto_stopped_enabled = self.auto_detect_stopped
+
+                                for x1, y1, x2, y2, anchor, cls_id, conf, track_id in detections:
+                                    active_ids.add(track_id)
+                                    state = self.track_motion_state.get(track_id)
+
                                     if state is None:
-                                        self.track_motion_state[int(track_id)] = {
+                                        self.track_motion_state[track_id] = {
                                             "ref_point": anchor,
                                             "since": now_mono,
                                             "cls_id": cls_id,
@@ -554,18 +590,15 @@ class VideoWorker(QThread):
                                             state["since"] = now_mono
                                         else:
                                             stopped_elapsed = now_mono - state["since"]
-                                            if stopped_elapsed >= STOPPED_SECONDS_THRESHOLD:
-                                                is_stopped_now = True
+                                            if stopped_elapsed >= 5.0:
+                                                stopped_candidates.append(
+                                                    (x1, y1, x2, y2, cls_id, conf, track_id, stopped_elapsed)
+                                                )
 
-                                    auto_stopped_enabled = self.auto_detect_stopped
-                                    already_reported = int(track_id) in self.reported_stopped_tracks
-                                    if is_stopped_now and auto_stopped_enabled and not already_reported:
-                                        self.reported_stopped_tracks.add(int(track_id))
-
-                                    previous = self.previous_points.get(int(track_id))
+                                    previous = self.previous_points.get(track_id)
                                     for line in lines_snapshot:
                                         line_id = line["id"]
-                                        pair = (int(track_id), line_id)
+                                        pair = (track_id, line_id)
                                         pixel_line = [
                                             (int(px * w), int(py * h))
                                             for px, py in line["points"]
@@ -574,42 +607,53 @@ class VideoWorker(QThread):
                                            track_crosses_polyline(previous, anchor, pixel_line):
                                             self.counted_pairs.add(pair)
                                             self.counts[line_id][cls_id] += 1
-                                    self.previous_points[int(track_id)] = anchor
+                                    self.previous_points[track_id] = anchor
 
-                                if is_stopped_now and auto_stopped_enabled and not already_reported:
-                                    annotated_preview = frame.copy()
-                                    cv2.rectangle(annotated_preview, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                                    cv2.putText(
-                                        annotated_preview,
-                                        f"VEHICULO DETENIDO ID:{track_id} ({stopped_elapsed:.1f}s)",
-                                        (x1, max(22, y1 - 24)),
-                                        cv2.FONT_HERSHEY_SIMPLEX,
-                                        0.55,
-                                        (0, 0, 255),
-                                        2,
-                                    )
-                                    fuente_txt = (
-                                        self.video_path
-                                        if self.source_mode == "video"
-                                        else f"Webcam índice {self.camera_index}"
-                                    )
-                                    if self.incident_store is not None:
-                                        record = self.incident_store.registrar(
-                                            frame_original=frame_original,
-                                            frame_anotado=annotated_preview,
-                                            tipo_evento="Vehículo detenido",
-                                            zona=f"Carril / zona cámara (ID {track_id})",
-                                            fuente=fuente_txt,
-                                            track_id=int(track_id),
-                                            confianza=round(conf, 3),
-                                            duracion_segundos=round(stopped_elapsed, 1),
-                                            observaciones=(
-                                                f"Detección automática: {CLASS_NAMES_ES.get(cls_id, cls_id)} "
-                                                f"sin desplazamiento mayor a {STOPPED_MOVE_TOLERANCE_PX:.0f}px "
-                                                f"durante {stopped_elapsed:.1f}s."
-                                            ),
+                                stale_ids = [tid for tid in self.track_motion_state if tid not in active_ids]
+                                for tid in stale_ids:
+                                    del self.track_motion_state[tid]
+
+                            is_traffic_jam = ignore_jam and (len(stopped_candidates) >= TRAFFIC_JAM_MIN_STOPPED)
+
+                            if auto_stopped_enabled and not is_traffic_jam:
+                                for x1, y1, x2, y2, cls_id, conf, track_id, stopped_elapsed in stopped_candidates:
+                                    if stopped_elapsed >= threshold_sec:
+                                        with self._lock:
+                                            already_reported = track_id in self.reported_stopped_tracks
+                                            cooldown_ok = (now_mono - self.last_alert_time) >= ALERT_COOLDOWN_SECONDS
+                                            if already_reported or not cooldown_ok:
+                                                continue
+                                            self.reported_stopped_tracks.add(track_id)
+                                            self.last_alert_time = now_mono
+
+                                        annotated_preview = frame.copy()
+                                        cv2.rectangle(annotated_preview, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                                        cv2.putText(
+                                            annotated_preview,
+                                            f"VEHICULO DETENIDO ID:{track_id} ({stopped_elapsed:.1f}s)",
+                                            (x1, max(22, y1 - 24)),
+                                            cv2.FONT_HERSHEY_SIMPLEX,
+                                            0.55,
+                                            (0, 0, 255),
+                                            2,
                                         )
-                                        self.incident_ready.emit(record)
+                                        fuente_txt = self._descripcion_fuente()
+                                        if self.incident_store is not None:
+                                            record = self.incident_store.registrar(
+                                                frame_original=frame_original,
+                                                frame_anotado=annotated_preview,
+                                                tipo_evento="Vehículo detenido",
+                                                zona=f"Carril / zona cámara (ID {track_id})",
+                                                fuente=fuente_txt,
+                                                track_id=track_id,
+                                                confianza=round(conf, 3),
+                                                duracion_segundos=round(stopped_elapsed, 1),
+                                                observaciones=(
+                                                    f"Detección automática: {CLASS_NAMES_ES.get(cls_id, cls_id)} "
+                                                    f"detenido por {stopped_elapsed:.1f}s (vía fluida)."
+                                                ),
+                                            )
+                                            self.incident_ready.emit(record)
 
                 for index, line in enumerate(lines_snapshot):
                     color = LINE_COLORS[index % len(LINE_COLORS)]
@@ -656,6 +700,12 @@ class VideoWorker(QThread):
                     frame, f"TOTAL: {total}  |  MOTOS: {motos_total}", (18, 35),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.68, (255, 255, 255), 2
                 )
+
+                if is_traffic_jam:
+                    cv2.putText(
+                        frame, "TRAFICO LENTO (Alertas pausadas)", (18, 72),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 200, 255), 2
+                    )
 
                 with self._latest_frames_lock:
                     self.latest_original_frame = frame_original
@@ -746,6 +796,7 @@ class VideoCanvas(QLabel):
         ny = min(1.0, max(0.0, (py - oy) / dh))
         self.point_added.emit(nx, ny)
 
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -756,7 +807,6 @@ class MainWindow(QMainWindow):
         self.pending_points = []
         self.next_line_id = 1
         self.incident_store = IncidentStore()
-        self._last_incident_popup = None
 
         central = QWidget()
         self.setCentralWidget(central)
@@ -800,9 +850,10 @@ class MainWindow(QMainWindow):
         source_layout.addWidget(QLabel("Modo:"), 0, 0)
         self.mode_source_combo = QComboBox()
         self.mode_source_combo.addItem("Archivo de video", "video")
-        self.mode_source_combo.addItem("Cámara web", "webcam")
-        idx_mode = 0 if SOURCE_MODE == "video" else 1
-        self.mode_source_combo.setCurrentIndex(idx_mode)
+        self.mode_source_combo.addItem("Cámara web (USB)", "webcam")
+        self.mode_source_combo.addItem("Cámara de seguridad (RTSP / IP)", "rtsp")
+        mode_to_idx = {"video": 0, "webcam": 1, "rtsp": 2}
+        self.mode_source_combo.setCurrentIndex(mode_to_idx.get(SOURCE_MODE, 0))
         self.mode_source_combo.currentIndexChanged.connect(self._on_source_mode_changed)
         source_layout.addWidget(self.mode_source_combo, 0, 1, 1, 2)
 
@@ -819,13 +870,18 @@ class MainWindow(QMainWindow):
         self.camera_spin.setValue(CAMERA_INDEX)
         source_layout.addWidget(self.camera_spin, 2, 1, 1, 2)
 
+        source_layout.addWidget(QLabel("URL Cámara:"), 3, 0)
+        self.stream_url_edit = QLineEdit(STREAM_URL)
+        self.stream_url_edit.setPlaceholderText("rtsp://usuario:clave@192.168.1.100:554/stream1")
+        source_layout.addWidget(self.stream_url_edit, 3, 1, 1, 2)
+
         self.start_button = QPushButton("Iniciar")
         self.start_button.clicked.connect(self.start_source)
         self.stop_button = QPushButton("Detener")
         self.stop_button.clicked.connect(self.stop_source)
         self.stop_button.setEnabled(False)
-        source_layout.addWidget(self.start_button, 3, 0, 1, 2)
-        source_layout.addWidget(self.stop_button, 3, 2)
+        source_layout.addWidget(self.start_button, 4, 0, 1, 2)
+        source_layout.addWidget(self.stop_button, 4, 2)
 
         side_layout.addWidget(source_group)
 
@@ -928,6 +984,20 @@ class MainWindow(QMainWindow):
         self.auto_stopped_check.stateChanged.connect(self._on_auto_stopped_changed)
         incidents_layout.addWidget(self.auto_stopped_check)
 
+        wait_row = QHBoxLayout()
+        wait_row.addWidget(QLabel("Tiempo espera (seg):"))
+        self.stopped_seconds_spin = QSpinBox()
+        self.stopped_seconds_spin.setRange(5, 300)
+        self.stopped_seconds_spin.setValue(int(STOPPED_SECONDS_THRESHOLD))
+        self.stopped_seconds_spin.valueChanged.connect(self._on_stopped_settings_changed)
+        wait_row.addWidget(self.stopped_seconds_spin)
+        incidents_layout.addLayout(wait_row)
+
+        self.ignore_jam_check = QCheckBox("Ignorar si hay tráfico lento (3+ autos)")
+        self.ignore_jam_check.setChecked(True)
+        self.ignore_jam_check.stateChanged.connect(self._on_stopped_settings_changed)
+        incidents_layout.addWidget(self.ignore_jam_check)
+
         self.capture_test_button = QPushButton("Registrar captura de prueba")
         self.capture_test_button.setToolTip(
             "Guarda el fotograma actual como incidencia de prueba. "
@@ -994,10 +1064,11 @@ class MainWindow(QMainWindow):
         self.cargar_historial_incidencias()
 
     def _on_source_mode_changed(self):
-        is_video = (self.mode_source_combo.currentData() == "video")
-        self.video_path_edit.setEnabled(is_video)
-        self.browse_button.setEnabled(is_video)
-        self.camera_spin.setEnabled(not is_video)
+        mode = self.mode_source_combo.currentData()
+        self.video_path_edit.setEnabled(mode == "video")
+        self.browse_button.setEnabled(mode == "video")
+        self.camera_spin.setEnabled(mode == "webcam")
+        self.stream_url_edit.setEnabled(mode == "rtsp")
 
     def _on_moto_conf_changed(self):
         if self.worker is not None and self.worker.isRunning():
@@ -1010,6 +1081,11 @@ class MainWindow(QMainWindow):
     def _on_auto_stopped_changed(self):
         if self.worker is not None and self.worker.isRunning():
             self.worker.set_auto_detect_stopped(self.auto_stopped_check.isChecked())
+
+    def _on_stopped_settings_changed(self):
+        if self.worker is not None and self.worker.isRunning():
+            self.worker.set_stopped_threshold(self.stopped_seconds_spin.value())
+            self.worker.set_ignore_traffic_jam(self.ignore_jam_check.isChecked())
 
     def browse_video(self):
         file_path, _ = QFileDialog.getOpenFileName(
@@ -1024,9 +1100,11 @@ class MainWindow(QMainWindow):
     def start_source(self):
         if self.worker is not None and self.worker.isRunning():
             return
+        self.status_label.setStyleSheet("color:#a66b00; font-weight:600;")
         mode = self.mode_source_combo.currentData()
         video_path = self.video_path_edit.text().strip()
         cam_idx = self.camera_spin.value()
+        stream_url = self.stream_url_edit.text().strip()
         model_path = self.model_combo.currentData()
         img_size = self.imgsz_combo.currentData()
         moto_conf = self.moto_conf_combo.currentData()
@@ -1036,6 +1114,7 @@ class MainWindow(QMainWindow):
             source_mode=mode,
             video_path=video_path,
             camera_index=cam_idx,
+            stream_url=stream_url,
             loop_video=LOOP_VIDEO,
             model_path=model_path,
             img_size=img_size,
@@ -1050,6 +1129,8 @@ class MainWindow(QMainWindow):
         self.worker.incident_ready.connect(self.on_incident_created)
         self.worker.set_lines(self.lines)
         self.worker.set_auto_detect_stopped(self.auto_stopped_check.isChecked())
+        self.worker.set_stopped_threshold(self.stopped_seconds_spin.value())
+        self.worker.set_ignore_traffic_jam(self.ignore_jam_check.isChecked())
         self.worker.start()
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
@@ -1065,7 +1146,7 @@ class MainWindow(QMainWindow):
 
     def registrar_captura_prueba(self):
         if self.worker is None or not self.worker.isRunning():
-            QMessageBox.information(self, "Sin fuente activa", "Inicia la webcam o un video antes de registrar una captura.")
+            QMessageBox.information(self, "Sin fuente activa", "Inicia la cámara o un video antes de registrar una captura.")
             return
         tipo = self.incident_type_combo.currentText()
         zona = self.incident_zone_edit.text().strip() or "Zona no especificada"
@@ -1075,6 +1156,7 @@ class MainWindow(QMainWindow):
                 zona=zona,
                 observaciones="Registro de prueba creado manualmente por el operador."
             )
+            self.status_label.setStyleSheet("color:#188038; font-weight:600;")
             self.status_label.setText(f"Captura guardada: {record['codigo']}")
         except Exception as exc:
             QMessageBox.critical(self, "No se pudo registrar", str(exc))
@@ -1088,24 +1170,10 @@ class MainWindow(QMainWindow):
                 self.incidents_list.setCurrentItem(item)
                 break
 
-        QApplication.beep()
-        if self._last_incident_popup is not None:
-            self._last_incident_popup.close()
-            self._last_incident_popup = None
-
-        popup = QMessageBox(self)
-        popup.setIcon(QMessageBox.Icon.Warning)
-        popup.setWindowTitle("Nueva incidencia SICV")
-        popup.setText(
-            f"{record['tipo_evento']}\n"
-            f"Código: {record['codigo']}\n"
-            f"Fecha y hora: {record['fecha']} {record['hora']}\n"
-            f"Zona: {record['zona']}"
+        self.status_label.setStyleSheet("color:#d93025; font-weight:700;")
+        self.status_label.setText(
+            f"⚠ ALERTA: {record['tipo_evento']} ({record['hora']}) - {record['codigo']}"
         )
-        popup.setStandardButtons(QMessageBox.StandardButton.Ok)
-        popup.setModal(False)
-        popup.show()
-        self._last_incident_popup = popup
 
     def cargar_historial_incidencias(self):
         estado_filtro = self.incident_filter_combo.currentText() if hasattr(self, "incident_filter_combo") else "Todos"
@@ -1248,6 +1316,7 @@ class MainWindow(QMainWindow):
             self.stats_label.setText("Conteos reiniciados. Inicia la fuente.")
 
     def show_error(self, message):
+        self.status_label.setStyleSheet("color:#d93025; font-weight:700;")
         self.status_label.setText("Error")
         QMessageBox.critical(self, "Problema", message)
         self.start_button.setEnabled(True)
